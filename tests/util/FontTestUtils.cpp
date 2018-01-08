@@ -23,9 +23,26 @@
 #include "minikin/FontCollection.h"
 #include "minikin/FontFamily.h"
 #include "minikin/LocaleList.h"
+
 #include "MinikinFontForTest.h"
+#include "MinikinInternal.h"
 
 namespace minikin {
+
+namespace {
+std::string xmlTrim(const std::string& in) {
+    if (in.empty()) {
+        return in;
+    }
+    const char XML_SPACES[] = "\u0020\u000D\u000A\u0009";
+    const size_t start = in.find_first_not_of(XML_SPACES);  // inclusive
+    const size_t end = in.find_last_not_of(XML_SPACES);     // inclusive
+    MINIKIN_ASSERT(start != std::string::npos, "Not a valid file name \"%s\"", in.c_str());
+    MINIKIN_ASSERT(end != std::string::npos, "Not a valid file name \"%s\"", in.c_str());
+    return in.substr(start, end - start + 1 /* +1 since end is inclusive */);
+}
+
+}  // namespace
 
 std::vector<std::shared_ptr<FontFamily>> getFontFamilies(const char* fontDir, const char* fontXml) {
     xmlDoc* doc = xmlReadFile(fontXml, NULL, 0);
@@ -38,12 +55,12 @@ std::vector<std::shared_ptr<FontFamily>> getFontFamilies(const char* fontDir, co
         }
 
         xmlChar* variantXmlch = xmlGetProp(familyNode, (const xmlChar*)"variant");
-        FontVariant variant = FontVariant::DEFAULT;
+        FontFamily::Variant variant = FontFamily::Variant::DEFAULT;
         if (variantXmlch) {
             if (xmlStrcmp(variantXmlch, (const xmlChar*)"elegant") == 0) {
-                variant = FontVariant::ELEGANT;
+                variant = FontFamily::Variant::ELEGANT;
             } else if (xmlStrcmp(variantXmlch, (const xmlChar*)"compact") == 0) {
-                variant = FontVariant::COMPACT;
+                variant = FontFamily::Variant::COMPACT;
             }
         }
 
@@ -53,15 +70,17 @@ std::vector<std::shared_ptr<FontFamily>> getFontFamilies(const char* fontDir, co
                 continue;
             }
 
-            FontWeight weight = static_cast<FontWeight>(
-                    atoi((const char*)(xmlGetProp(fontNode, (const xmlChar*)"weight"))));
-            FontSlant italic = static_cast<FontSlant>(xmlStrcmp(
-                    xmlGetProp(fontNode, (const xmlChar*)"style"), (const xmlChar*)"italic") == 0);
+            uint16_t weight = atoi((const char*)(xmlGetProp(fontNode, (const xmlChar*)"weight")));
+            FontStyle::Slant italic = static_cast<FontStyle::Slant>(
+                    xmlStrcmp(xmlGetProp(fontNode, (const xmlChar*)"style"),
+                              (const xmlChar*)"italic") == 0);
             xmlChar* index = xmlGetProp(familyNode, (const xmlChar*)"index");
 
             xmlChar* fontFileName = xmlNodeListGetString(doc, fontNode->xmlChildrenNode, 1);
-            std::string fontPath = fontDir + std::string((const char*)fontFileName);
+            const std::string fontPath = xmlTrim(fontDir + std::string((const char*)fontFileName));
             xmlFree(fontFileName);
+
+            // TODO: Support font variation axis.
 
             if (access(fontPath.c_str(), R_OK) != 0) {
                 ALOGW("%s is not found.", fontPath.c_str());

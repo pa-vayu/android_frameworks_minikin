@@ -19,15 +19,12 @@
 #include <gtest/gtest.h>
 
 #include "minikin/LocaleList.h"
-#include "ICUTestBase.h"
+
 #include "LocaleListCache.h"
 #include "MinikinFontForTest.h"
 #include "MinikinInternal.h"
 
 namespace minikin {
-
-typedef ICUTestBase LocaleListTest;
-typedef ICUTestBase LocaleTest;
 
 static const LocaleList& createLocaleList(const std::string& input) {
     android::AutoMutex _l(gMinikinLock);
@@ -47,11 +44,10 @@ static Locale createLocaleWithoutICUSanitization(const std::string& input) {
 
 std::shared_ptr<FontFamily> makeFamily(const std::string& fontPath) {
     std::shared_ptr<MinikinFont> font(new MinikinFontForTest(fontPath));
-    return std::make_shared<FontFamily>(
-            std::vector<Font>({Font(font, FontStyle())}));
+    return std::make_shared<FontFamily>(std::vector<Font>({Font(font, FontStyle())}));
 }
 
-TEST_F(LocaleTest, basicTests) {
+TEST(LocaleTest, basicTests) {
     Locale defaultLocale;
     Locale emptyLocale("");
     Locale english = createLocale("en");
@@ -84,7 +80,7 @@ TEST_F(LocaleTest, basicTests) {
     EXPECT_FALSE(undZsye.isUnsupported());
 }
 
-TEST_F(LocaleTest, getStringTest) {
+TEST(LocaleTest, getStringTest) {
     EXPECT_EQ("en-Latn-US", createLocale("en").getString());
     EXPECT_EQ("en-Latn-US", createLocale("en-Latn").getString());
 
@@ -126,7 +122,7 @@ TEST_F(LocaleTest, getStringTest) {
     EXPECT_EQ("en-Latn-US", createLocale("und-Abcdefgh").getString());
 }
 
-TEST_F(LocaleTest, testReconstruction) {
+TEST(LocaleTest, testReconstruction) {
     EXPECT_EQ("en", createLocaleWithoutICUSanitization("en").getString());
     EXPECT_EQ("fil", createLocaleWithoutICUSanitization("fil").getString());
     EXPECT_EQ("und", createLocaleWithoutICUSanitization("und").getString());
@@ -154,7 +150,7 @@ TEST_F(LocaleTest, testReconstruction) {
     EXPECT_EQ("zzz-Zzzz-999", createLocaleWithoutICUSanitization("zzz-Zzzz-999").getString());
 }
 
-TEST_F(LocaleTest, ScriptEqualTest) {
+TEST(LocaleTest, ScriptEqualTest) {
     EXPECT_TRUE(createLocale("en").isEqualScript(createLocale("en")));
     EXPECT_TRUE(createLocale("en-Latn").isEqualScript(createLocale("en")));
     EXPECT_TRUE(createLocale("jp-Latn").isEqualScript(createLocale("en-Latn")));
@@ -164,7 +160,7 @@ TEST_F(LocaleTest, ScriptEqualTest) {
     EXPECT_FALSE(createLocale("en-Jpan").isEqualScript(createLocale("en-Hani")));
 }
 
-TEST_F(LocaleTest, ScriptMatchTest) {
+TEST(LocaleTest, ScriptMatchTest) {
     const bool SUPPORTED = true;
     const bool NOT_SUPPORTED = false;
 
@@ -173,80 +169,80 @@ TEST_F(LocaleTest, ScriptMatchTest) {
         const std::string requestedScript;
         bool isSupported;
     } testCases[] = {
-        // Same scripts
-        { "en-Latn", "Latn", SUPPORTED },
-        { "ja-Jpan", "Jpan", SUPPORTED },
-        { "ja-Hira", "Hira", SUPPORTED },
-        { "ja-Kana", "Kana", SUPPORTED },
-        { "ja-Hrkt", "Hrkt", SUPPORTED },
-        { "zh-Hans", "Hans", SUPPORTED },
-        { "zh-Hant", "Hant", SUPPORTED },
-        { "zh-Hani", "Hani", SUPPORTED },
-        { "ko-Kore", "Kore", SUPPORTED },
-        { "ko-Hang", "Hang", SUPPORTED },
-        { "zh-Hanb", "Hanb", SUPPORTED },
+            // Same scripts
+            {"en-Latn", "Latn", SUPPORTED},
+            {"ja-Jpan", "Jpan", SUPPORTED},
+            {"ja-Hira", "Hira", SUPPORTED},
+            {"ja-Kana", "Kana", SUPPORTED},
+            {"ja-Hrkt", "Hrkt", SUPPORTED},
+            {"zh-Hans", "Hans", SUPPORTED},
+            {"zh-Hant", "Hant", SUPPORTED},
+            {"zh-Hani", "Hani", SUPPORTED},
+            {"ko-Kore", "Kore", SUPPORTED},
+            {"ko-Hang", "Hang", SUPPORTED},
+            {"zh-Hanb", "Hanb", SUPPORTED},
 
-        // Japanese supports Hiragana, Katakanara, etc.
-        { "ja-Jpan", "Hira", SUPPORTED },
-        { "ja-Jpan", "Kana", SUPPORTED },
-        { "ja-Jpan", "Hrkt", SUPPORTED },
-        { "ja-Hrkt", "Hira", SUPPORTED },
-        { "ja-Hrkt", "Kana", SUPPORTED },
+            // Japanese supports Hiragana, Katakanara, etc.
+            {"ja-Jpan", "Hira", SUPPORTED},
+            {"ja-Jpan", "Kana", SUPPORTED},
+            {"ja-Jpan", "Hrkt", SUPPORTED},
+            {"ja-Hrkt", "Hira", SUPPORTED},
+            {"ja-Hrkt", "Kana", SUPPORTED},
 
-        // Chinese supports Han.
-        { "zh-Hans", "Hani", SUPPORTED },
-        { "zh-Hant", "Hani", SUPPORTED },
-        { "zh-Hanb", "Hani", SUPPORTED },
+            // Chinese supports Han.
+            {"zh-Hans", "Hani", SUPPORTED},
+            {"zh-Hant", "Hani", SUPPORTED},
+            {"zh-Hanb", "Hani", SUPPORTED},
 
-        // Hanb supports Bopomofo.
-        { "zh-Hanb", "Bopo", SUPPORTED },
+            // Hanb supports Bopomofo.
+            {"zh-Hanb", "Bopo", SUPPORTED},
 
-        // Korean supports Hangul.
-        { "ko-Kore", "Hang", SUPPORTED },
+            // Korean supports Hangul.
+            {"ko-Kore", "Hang", SUPPORTED},
 
-        // Different scripts
-        { "ja-Jpan", "Latn", NOT_SUPPORTED },
-        { "en-Latn", "Jpan", NOT_SUPPORTED },
-        { "ja-Jpan", "Hant", NOT_SUPPORTED },
-        { "zh-Hant", "Jpan", NOT_SUPPORTED },
-        { "ja-Jpan", "Hans", NOT_SUPPORTED },
-        { "zh-Hans", "Jpan", NOT_SUPPORTED },
-        { "ja-Jpan", "Kore", NOT_SUPPORTED },
-        { "ko-Kore", "Jpan", NOT_SUPPORTED },
-        { "zh-Hans", "Hant", NOT_SUPPORTED },
-        { "zh-Hant", "Hans", NOT_SUPPORTED },
-        { "zh-Hans", "Kore", NOT_SUPPORTED },
-        { "ko-Kore", "Hans", NOT_SUPPORTED },
-        { "zh-Hant", "Kore", NOT_SUPPORTED },
-        { "ko-Kore", "Hant", NOT_SUPPORTED },
+            // Different scripts
+            {"ja-Jpan", "Latn", NOT_SUPPORTED},
+            {"en-Latn", "Jpan", NOT_SUPPORTED},
+            {"ja-Jpan", "Hant", NOT_SUPPORTED},
+            {"zh-Hant", "Jpan", NOT_SUPPORTED},
+            {"ja-Jpan", "Hans", NOT_SUPPORTED},
+            {"zh-Hans", "Jpan", NOT_SUPPORTED},
+            {"ja-Jpan", "Kore", NOT_SUPPORTED},
+            {"ko-Kore", "Jpan", NOT_SUPPORTED},
+            {"zh-Hans", "Hant", NOT_SUPPORTED},
+            {"zh-Hant", "Hans", NOT_SUPPORTED},
+            {"zh-Hans", "Kore", NOT_SUPPORTED},
+            {"ko-Kore", "Hans", NOT_SUPPORTED},
+            {"zh-Hant", "Kore", NOT_SUPPORTED},
+            {"ko-Kore", "Hant", NOT_SUPPORTED},
 
-        // Hiragana doesn't support Japanese, etc.
-        { "ja-Hira", "Jpan", NOT_SUPPORTED },
-        { "ja-Kana", "Jpan", NOT_SUPPORTED },
-        { "ja-Hrkt", "Jpan", NOT_SUPPORTED },
-        { "ja-Hani", "Jpan", NOT_SUPPORTED },
-        { "ja-Hira", "Hrkt", NOT_SUPPORTED },
-        { "ja-Kana", "Hrkt", NOT_SUPPORTED },
-        { "ja-Hani", "Hrkt", NOT_SUPPORTED },
-        { "ja-Hani", "Hira", NOT_SUPPORTED },
-        { "ja-Hani", "Kana", NOT_SUPPORTED },
+            // Hiragana doesn't support Japanese, etc.
+            {"ja-Hira", "Jpan", NOT_SUPPORTED},
+            {"ja-Kana", "Jpan", NOT_SUPPORTED},
+            {"ja-Hrkt", "Jpan", NOT_SUPPORTED},
+            {"ja-Hani", "Jpan", NOT_SUPPORTED},
+            {"ja-Hira", "Hrkt", NOT_SUPPORTED},
+            {"ja-Kana", "Hrkt", NOT_SUPPORTED},
+            {"ja-Hani", "Hrkt", NOT_SUPPORTED},
+            {"ja-Hani", "Hira", NOT_SUPPORTED},
+            {"ja-Hani", "Kana", NOT_SUPPORTED},
 
-        // Kanji doesn't support Chinese, etc.
-        { "zh-Hani", "Hant", NOT_SUPPORTED },
-        { "zh-Hani", "Hans", NOT_SUPPORTED },
-        { "zh-Hani", "Hanb", NOT_SUPPORTED },
+            // Kanji doesn't support Chinese, etc.
+            {"zh-Hani", "Hant", NOT_SUPPORTED},
+            {"zh-Hani", "Hans", NOT_SUPPORTED},
+            {"zh-Hani", "Hanb", NOT_SUPPORTED},
 
-        // Hangul doesn't support Korean, etc.
-        { "ko-Hang", "Kore", NOT_SUPPORTED },
-        { "ko-Hani", "Kore", NOT_SUPPORTED },
-        { "ko-Hani", "Hang", NOT_SUPPORTED },
-        { "ko-Hang", "Hani", NOT_SUPPORTED },
+            // Hangul doesn't support Korean, etc.
+            {"ko-Hang", "Kore", NOT_SUPPORTED},
+            {"ko-Hani", "Kore", NOT_SUPPORTED},
+            {"ko-Hani", "Hang", NOT_SUPPORTED},
+            {"ko-Hang", "Hani", NOT_SUPPORTED},
 
-        // Han with botomofo doesn't support simplified Chinese, etc.
-        { "zh-Hanb", "Hant", NOT_SUPPORTED },
-        { "zh-Hanb", "Hans", NOT_SUPPORTED },
-        { "zh-Hanb", "Jpan", NOT_SUPPORTED },
-        { "zh-Hanb", "Kore", NOT_SUPPORTED },
+            // Han with botomofo doesn't support simplified Chinese, etc.
+            {"zh-Hanb", "Hant", NOT_SUPPORTED},
+            {"zh-Hanb", "Hans", NOT_SUPPORTED},
+            {"zh-Hanb", "Jpan", NOT_SUPPORTED},
+            {"zh-Hanb", "Kore", NOT_SUPPORTED},
     };
 
     for (auto testCase : testCases) {
@@ -254,18 +250,16 @@ TEST_F(LocaleTest, ScriptMatchTest) {
                 HB_TAG(testCase.requestedScript[0], testCase.requestedScript[1],
                        testCase.requestedScript[2], testCase.requestedScript[3]));
         if (testCase.isSupported) {
-            EXPECT_TRUE(
-                    createLocale(testCase.baseScript).supportsHbScript(script))
+            EXPECT_TRUE(createLocale(testCase.baseScript).supportsHbScript(script))
                     << testCase.baseScript << " should support " << testCase.requestedScript;
         } else {
-            EXPECT_FALSE(
-                    createLocale(testCase.baseScript).supportsHbScript(script))
+            EXPECT_FALSE(createLocale(testCase.baseScript).supportsHbScript(script))
                     << testCase.baseScript << " shouldn't support " << testCase.requestedScript;
         }
     }
 }
 
-TEST_F(LocaleListTest, basicTests) {
+TEST(LocaleListTest, basicTests) {
     LocaleList emptyLocales;
     EXPECT_EQ(0u, emptyLocales.size());
 
@@ -281,7 +275,7 @@ TEST_F(LocaleListTest, basicTests) {
     EXPECT_EQ(french, twoLocales[1]);
 }
 
-TEST_F(LocaleListTest, unsupportedLocaleuageTests) {
+TEST(LocaleListTest, unsupportedLocaleuageTests) {
     const LocaleList& oneUnsupported = createLocaleList("abcd-example");
     EXPECT_TRUE(oneUnsupported.empty());
 
@@ -298,7 +292,7 @@ TEST_F(LocaleListTest, unsupportedLocaleuageTests) {
     EXPECT_EQ(english, lastUnsupported[0]);
 }
 
-TEST_F(LocaleListTest, repeatedLocaleuageTests) {
+TEST(LocaleListTest, repeatedLocaleuageTests) {
     Locale english = createLocale("en");
     Locale french = createLocale("fr");
     Locale canadianFrench = createLocale("fr-CA");
@@ -326,7 +320,7 @@ TEST_F(LocaleListTest, repeatedLocaleuageTests) {
     EXPECT_EQ(french, locales2[1]);
 }
 
-TEST_F(LocaleListTest, identifierTest) {
+TEST(LocaleListTest, identifierTest) {
     EXPECT_EQ(createLocale("en-Latn-US"), createLocale("en-Latn-US"));
     EXPECT_EQ(createLocale("zh-Hans-CN"), createLocale("zh-Hans-CN"));
     EXPECT_EQ(createLocale("en-Zsye-US"), createLocale("en-Zsye-US"));
@@ -337,7 +331,7 @@ TEST_F(LocaleListTest, identifierTest) {
     EXPECT_NE(createLocale("zh-Hant-HK"), createLocale("zh-Hant-TW"));
 }
 
-TEST_F(LocaleListTest, undEmojiTests) {
+TEST(LocaleListTest, undEmojiTests) {
     Locale emoji = createLocale("und-Zsye");
     EXPECT_EQ(Locale::EMSTYLE_EMOJI, emoji.getEmojiStyle());
 
@@ -350,34 +344,24 @@ TEST_F(LocaleListTest, undEmojiTests) {
     EXPECT_FALSE(emoji == undExample);
 }
 
-TEST_F(LocaleListTest, subtagEmojiTest) {
+TEST(LocaleListTest, subtagEmojiTest) {
     std::string subtagEmojiStrings[] = {
-        // Duplicate subtag case.
-        "und-Latn-u-em-emoji-u-em-text",
+            // Duplicate subtag case.
+            "und-Latn-u-em-emoji-u-em-text",
 
-        // Strings that contain language.
-        "und-u-em-emoji",
-        "en-u-em-emoji",
+            // Strings that contain language.
+            "und-u-em-emoji", "en-u-em-emoji",
 
-        // Strings that contain the script.
-        "und-Jpan-u-em-emoji",
-        "en-Latn-u-em-emoji",
-        "und-Zsym-u-em-emoji",
-        "und-Zsye-u-em-emoji",
-        "en-Zsym-u-em-emoji",
-        "en-Zsye-u-em-emoji",
+            // Strings that contain the script.
+            "und-Jpan-u-em-emoji", "en-Latn-u-em-emoji", "und-Zsym-u-em-emoji",
+            "und-Zsye-u-em-emoji", "en-Zsym-u-em-emoji", "en-Zsye-u-em-emoji",
 
-        // Strings that contain the country.
-        "und-US-u-em-emoji",
-        "en-US-u-em-emoji",
-        "es-419-u-em-emoji",
-        "und-Latn-US-u-em-emoji",
-        "en-Zsym-US-u-em-emoji",
-        "en-Zsye-US-u-em-emoji",
-        "es-Zsye-419-u-em-emoji",
+            // Strings that contain the country.
+            "und-US-u-em-emoji", "en-US-u-em-emoji", "es-419-u-em-emoji", "und-Latn-US-u-em-emoji",
+            "en-Zsym-US-u-em-emoji", "en-Zsye-US-u-em-emoji", "es-Zsye-419-u-em-emoji",
 
-        // Strings that contain the variant.
-        "de-Latn-DE-1901-u-em-emoji",
+            // Strings that contain the variant.
+            "de-Latn-DE-1901-u-em-emoji",
     };
 
     for (auto subtagEmojiString : subtagEmojiStrings) {
@@ -387,34 +371,24 @@ TEST_F(LocaleListTest, subtagEmojiTest) {
     }
 }
 
-TEST_F(LocaleListTest, subtagTextTest) {
+TEST(LocaleListTest, subtagTextTest) {
     std::string subtagTextStrings[] = {
-        // Duplicate subtag case.
-        "und-Latn-u-em-text-u-em-emoji",
+            // Duplicate subtag case.
+            "und-Latn-u-em-text-u-em-emoji",
 
-        // Strings that contain language.
-        "und-u-em-text",
-        "en-u-em-text",
+            // Strings that contain language.
+            "und-u-em-text", "en-u-em-text",
 
-        // Strings that contain the script.
-        "und-Latn-u-em-text",
-        "en-Jpan-u-em-text",
-        "und-Zsym-u-em-text",
-        "und-Zsye-u-em-text",
-        "en-Zsym-u-em-text",
-        "en-Zsye-u-em-text",
+            // Strings that contain the script.
+            "und-Latn-u-em-text", "en-Jpan-u-em-text", "und-Zsym-u-em-text", "und-Zsye-u-em-text",
+            "en-Zsym-u-em-text", "en-Zsye-u-em-text",
 
-        // Strings that contain the country.
-        "und-US-u-em-text",
-        "en-US-u-em-text",
-        "es-419-u-em-text",
-        "und-Latn-US-u-em-text",
-        "en-Zsym-US-u-em-text",
-        "en-Zsye-US-u-em-text",
-        "es-Zsye-419-u-em-text",
+            // Strings that contain the country.
+            "und-US-u-em-text", "en-US-u-em-text", "es-419-u-em-text", "und-Latn-US-u-em-text",
+            "en-Zsym-US-u-em-text", "en-Zsye-US-u-em-text", "es-Zsye-419-u-em-text",
 
-        // Strings that contain the variant.
-        "de-Latn-DE-1901-u-em-text",
+            // Strings that contain the variant.
+            "de-Latn-DE-1901-u-em-text",
     };
 
     for (auto subtagTextString : subtagTextStrings) {
@@ -426,31 +400,23 @@ TEST_F(LocaleListTest, subtagTextTest) {
 
 // TODO: add more "und" language cases whose language and script are
 //       unexpectedly translated to en-Latn by ICU.
-TEST_F(LocaleListTest, subtagDefaultTest) {
+TEST(LocaleListTest, subtagDefaultTest) {
     std::string subtagDefaultStrings[] = {
-        // Duplicate subtag case.
-        "en-Latn-u-em-default-u-em-emoji",
-        "en-Latn-u-em-default-u-em-text",
+            // Duplicate subtag case.
+            "en-Latn-u-em-default-u-em-emoji", "en-Latn-u-em-default-u-em-text",
 
-        // Strings that contain language.
-        "und-u-em-default",
-        "en-u-em-default",
+            // Strings that contain language.
+            "und-u-em-default", "en-u-em-default",
 
-        // Strings that contain the script.
-        "en-Latn-u-em-default",
-        "en-Zsym-u-em-default",
-        "en-Zsye-u-em-default",
+            // Strings that contain the script.
+            "en-Latn-u-em-default", "en-Zsym-u-em-default", "en-Zsye-u-em-default",
 
-        // Strings that contain the country.
-        "en-US-u-em-default",
-        "en-Latn-US-u-em-default",
-        "es-Latn-419-u-em-default",
-        "en-Zsym-US-u-em-default",
-        "en-Zsye-US-u-em-default",
-        "es-Zsye-419-u-em-default",
+            // Strings that contain the country.
+            "en-US-u-em-default", "en-Latn-US-u-em-default", "es-Latn-419-u-em-default",
+            "en-Zsym-US-u-em-default", "en-Zsye-US-u-em-default", "es-Zsye-419-u-em-default",
 
-        // Strings that contain the variant.
-        "de-Latn-DE-1901-u-em-default",
+            // Strings that contain the variant.
+            "de-Latn-DE-1901-u-em-default",
     };
 
     for (auto subtagDefaultString : subtagDefaultStrings) {
@@ -460,16 +426,16 @@ TEST_F(LocaleListTest, subtagDefaultTest) {
     }
 }
 
-TEST_F(LocaleListTest, subtagEmptyTest) {
+TEST(LocaleListTest, subtagEmptyTest) {
     std::string subtagEmptyStrings[] = {
-        "und",
-        "jp",
-        "en-US",
-        "en-Latn",
-        "en-Latn-US",
-        "en-Latn-US-u-em",
-        "en-Latn-US-u-em-defaultemoji",
-        "de-Latn-DE-1901",
+            "und",
+            "jp",
+            "en-US",
+            "en-Latn",
+            "en-Latn-US",
+            "en-Latn-US-u-em",
+            "en-Latn-US-u-em-defaultemoji",
+            "de-Latn-DE-1901",
     };
 
     for (auto subtagEmptyString : subtagEmptyStrings) {
@@ -479,7 +445,7 @@ TEST_F(LocaleListTest, subtagEmptyTest) {
     }
 }
 
-TEST_F(LocaleListTest, registerLocaleListTest) {
+TEST(LocaleListTest, registerLocaleListTest) {
     EXPECT_EQ(0UL, registerLocaleList(""));
     EXPECT_NE(0UL, registerLocaleList("en"));
     EXPECT_NE(0UL, registerLocaleList("jp"));
@@ -514,10 +480,9 @@ TEST_F(LocaleListTest, registerLocaleListTest) {
 // U+717D U+E0103 (VS20)
 const char kVsTestFont[] = kTestFontDir "VariationSelectorTest-Regular.ttf";
 
-class FontFamilyTest : public ICUTestBase {
+class FontFamilyTest : public testing::Test {
 public:
     virtual void SetUp() override {
-        ICUTestBase::SetUp();
         if (access(kVsTestFont, R_OK) != 0) {
             FAIL() << "Unable to read " << kVsTestFont << ". "
                    << "Please prepare the test data directory. "
@@ -541,14 +506,13 @@ void expectVSGlyphs(FontFamily* family, uint32_t codepoint, const std::set<uint3
             EXPECT_TRUE(family->hasGlyph(codepoint, i))
                     << "Glyph for U+" << std::hex << codepoint << " U+" << i;
         }
-
     }
 }
 
 TEST_F(FontFamilyTest, hasVariationSelectorTest) {
     std::shared_ptr<MinikinFont> minikinFont(new MinikinFontForTest(kVsTestFont));
     std::shared_ptr<FontFamily> family(
-            new FontFamily(std::vector<Font>{ Font(minikinFont, FontStyle()) }));
+            new FontFamily(std::vector<Font>{Font(minikinFont, FontStyle())}));
 
     const uint32_t kVS1 = 0xFE00;
     const uint32_t kVS2 = 0xFE01;
@@ -584,23 +548,20 @@ TEST_F(FontFamilyTest, hasVSTableTest) {
         const std::string fontPath;
         bool hasVSTable;
     } testCases[] = {
-        { kTestFontDir "Ja.ttf", true },
-        { kTestFontDir "ZhHant.ttf", true },
-        { kTestFontDir "ZhHans.ttf", true },
-        { kTestFontDir "Italic.ttf", false },
-        { kTestFontDir "Bold.ttf", false },
-        { kTestFontDir "BoldItalic.ttf", false },
+            {kTestFontDir "Ja.ttf", true},     {kTestFontDir "ZhHant.ttf", true},
+            {kTestFontDir "ZhHans.ttf", true}, {kTestFontDir "Italic.ttf", false},
+            {kTestFontDir "Bold.ttf", false},  {kTestFontDir "BoldItalic.ttf", false},
     };
 
     for (auto testCase : testCases) {
-        SCOPED_TRACE(testCase.hasVSTable ?
-                "Font " + testCase.fontPath + " should have a variation sequence table." :
-                "Font " + testCase.fontPath + " shouldn't have a variation sequence table.");
+        SCOPED_TRACE(testCase.hasVSTable ? "Font " + testCase.fontPath +
+                                                   " should have a variation sequence table."
+                                         : "Font " + testCase.fontPath +
+                                                   " shouldn't have a variation sequence table.");
 
-        std::shared_ptr<MinikinFont> minikinFont(
-                new MinikinFontForTest(testCase.fontPath));
-        std::shared_ptr<FontFamily> family(new FontFamily(
-                std::vector<Font>{ Font(minikinFont, FontStyle()) }));
+        std::shared_ptr<MinikinFont> minikinFont(new MinikinFontForTest(testCase.fontPath));
+        std::shared_ptr<FontFamily> family(
+                new FontFamily(std::vector<Font>{Font(minikinFont, FontStyle())}));
         EXPECT_EQ(testCase.hasVSTable, family->hasVSTable());
     }
 }
@@ -616,9 +577,8 @@ TEST_F(FontFamilyTest, createFamilyWithVariationTest) {
     {
         // Do not ceate new instance if none of variations are specified.
         EXPECT_EQ(nullptr,
-                multiAxisFamily->createFamilyWithVariation(std::vector<FontVariation>()));
-        EXPECT_EQ(nullptr,
-                noAxisFamily->createFamilyWithVariation(std::vector<FontVariation>()));
+                  multiAxisFamily->createFamilyWithVariation(std::vector<FontVariation>()));
+        EXPECT_EQ(nullptr, noAxisFamily->createFamilyWithVariation(std::vector<FontVariation>()));
     }
     {
         // New instance should be used for supported variation.
@@ -631,10 +591,8 @@ TEST_F(FontFamilyTest, createFamilyWithVariationTest) {
     }
     {
         // New instance should be used for supported variation. (multiple variations case)
-        std::vector<FontVariation> variations = {
-                { MinikinFont::MakeTag('w', 'd', 't', 'h'), 1.0f },
-                { MinikinFont::MakeTag('w', 'g', 'h', 't'), 1.0f }
-        };
+        std::vector<FontVariation> variations = {{MinikinFont::MakeTag('w', 'd', 't', 'h'), 1.0f},
+                                                 {MinikinFont::MakeTag('w', 'g', 'h', 't'), 1.0f}};
         std::shared_ptr<FontFamily> newFamily(
                 multiAxisFamily->createFamilyWithVariation(variations));
         EXPECT_NE(nullptr, newFamily.get());
@@ -643,18 +601,14 @@ TEST_F(FontFamilyTest, createFamilyWithVariationTest) {
     }
     {
         // Do not ceate new instance if none of variations are supported.
-        std::vector<FontVariation> variations = {
-                { MinikinFont::MakeTag('Z', 'Z', 'Z', 'Z'), 1.0f }
-        };
+        std::vector<FontVariation> variations = {{MinikinFont::MakeTag('Z', 'Z', 'Z', 'Z'), 1.0f}};
         EXPECT_EQ(nullptr, multiAxisFamily->createFamilyWithVariation(variations));
         EXPECT_EQ(nullptr, noAxisFamily->createFamilyWithVariation(variations));
     }
     {
         // At least one axis is supported, should create new instance.
-        std::vector<FontVariation> variations = {
-                { MinikinFont::MakeTag('w', 'd', 't', 'h'), 1.0f },
-                { MinikinFont::MakeTag('Z', 'Z', 'Z', 'Z'), 1.0f }
-        };
+        std::vector<FontVariation> variations = {{MinikinFont::MakeTag('w', 'd', 't', 'h'), 1.0f},
+                                                 {MinikinFont::MakeTag('Z', 'Z', 'Z', 'Z'), 1.0f}};
         std::shared_ptr<FontFamily> newFamily(
                 multiAxisFamily->createFamilyWithVariation(variations));
         EXPECT_NE(nullptr, newFamily.get());
@@ -690,101 +644,87 @@ TEST_F(FontFamilyTest, coverageTableSelectionTest) {
     EXPECT_TRUE(unicodeEnc4Font->hasGlyph(0x1F926, 0));
 }
 
-const char* slantToString(FontSlant slant) {
-    if (slant == FontSlant::ITALIC) {
+const char* slantToString(FontStyle::Slant slant) {
+    if (slant == FontStyle::Slant::ITALIC) {
         return "ITALIC";
     } else {
         return "UPRIGHT";
     }
 }
 
-const char* variantToString(FontVariant variant) {
-    switch (variant) {
-        case FontVariant::DEFAULT:
-            return "DEFAULT";
-        case FontVariant::COMPACT:
-            return "COMPACT";
-        case FontVariant::ELEGANT:
-            return "ELEGANT";
-        default:
-            MINIKIN_NOT_REACHED("Unknown variant");
-    }
-}
-
 std::string fontStyleToString(const FontStyle& style) {
     char buf[64] = {};
-    snprintf(buf, sizeof(buf), "FontStyle(weight=%d, slant=%s, variant=%s)",
-             style.weight, slantToString(style.slant),
-             variantToString(style.variant));
+    snprintf(buf, sizeof(buf), "FontStyle(weight=%d, slant=%s)", style.weight(),
+             slantToString(style.slant()));
     return buf;
 }
 
 TEST_F(FontFamilyTest, closestMatch) {
     constexpr char ROBOTO[] = "/system/fonts/Roboto-Regular.ttf";
 
-    constexpr FontWeight THIN = FontWeight::THIN;
-    constexpr FontWeight LIGHT = FontWeight::LIGHT;
-    constexpr FontWeight NORMAL = FontWeight::NORMAL;
-    constexpr FontWeight MEDIUM = FontWeight::MEDIUM;
-    constexpr FontWeight BOLD = FontWeight::BOLD;
-    constexpr FontWeight BLACK = FontWeight::BLACK;
+    constexpr FontStyle::Weight THIN = FontStyle::Weight::THIN;
+    constexpr FontStyle::Weight LIGHT = FontStyle::Weight::LIGHT;
+    constexpr FontStyle::Weight NORMAL = FontStyle::Weight::NORMAL;
+    constexpr FontStyle::Weight MEDIUM = FontStyle::Weight::MEDIUM;
+    constexpr FontStyle::Weight BOLD = FontStyle::Weight::BOLD;
+    constexpr FontStyle::Weight BLACK = FontStyle::Weight::BLACK;
 
-    constexpr FontSlant UPRIGHT = FontSlant::UPRIGHT;
-    constexpr FontSlant ITALIC = FontSlant::ITALIC;
+    constexpr FontStyle::Slant UPRIGHT = FontStyle::Slant::UPRIGHT;
+    constexpr FontStyle::Slant ITALIC = FontStyle::Slant::ITALIC;
 
     const std::vector<FontStyle> STANDARD_SET = {
-          FontStyle(NORMAL, UPRIGHT),  // 0
-          FontStyle(BOLD, UPRIGHT),    // 1
-          FontStyle(NORMAL, ITALIC),   // 2
-          FontStyle(BOLD, ITALIC),     // 3
+            FontStyle(NORMAL, UPRIGHT),  // 0
+            FontStyle(BOLD, UPRIGHT),    // 1
+            FontStyle(NORMAL, ITALIC),   // 2
+            FontStyle(BOLD, ITALIC),     // 3
     };
 
     const std::vector<FontStyle> FULL_SET = {
-          FontStyle(THIN, UPRIGHT),    // 0
-          FontStyle(LIGHT, UPRIGHT),   // 1
-          FontStyle(NORMAL, UPRIGHT),  // 2
-          FontStyle(MEDIUM, UPRIGHT),  // 3
-          FontStyle(BOLD, UPRIGHT),    // 4
-          FontStyle(BLACK, UPRIGHT),   // 5
-          FontStyle(THIN, ITALIC),     // 6
-          FontStyle(LIGHT, ITALIC),    // 7
-          FontStyle(NORMAL, ITALIC),   // 8
-          FontStyle(MEDIUM, ITALIC),   // 9
-          FontStyle(BOLD, ITALIC),     // 10
-          FontStyle(BLACK, ITALIC),    // 11
+            FontStyle(THIN, UPRIGHT),    // 0
+            FontStyle(LIGHT, UPRIGHT),   // 1
+            FontStyle(NORMAL, UPRIGHT),  // 2
+            FontStyle(MEDIUM, UPRIGHT),  // 3
+            FontStyle(BOLD, UPRIGHT),    // 4
+            FontStyle(BLACK, UPRIGHT),   // 5
+            FontStyle(THIN, ITALIC),     // 6
+            FontStyle(LIGHT, ITALIC),    // 7
+            FontStyle(NORMAL, ITALIC),   // 8
+            FontStyle(MEDIUM, ITALIC),   // 9
+            FontStyle(BOLD, ITALIC),     // 10
+            FontStyle(BLACK, ITALIC),    // 11
     };
     struct TestCase {
         FontStyle wantedStyle;
         std::vector<FontStyle> familyStyles;
         size_t expectedIndex;
     } testCases[] = {
-        { FontStyle(), { FontStyle() } , 0 },
+            {FontStyle(), {FontStyle()}, 0},
 
-        // Exact matches
-        { FontStyle(BOLD), { FontStyle(NORMAL), FontStyle(BOLD) }, 1 },
-        { FontStyle(BOLD), { FontStyle(LIGHT), FontStyle(BOLD) }, 1 },
-        { FontStyle(LIGHT), { FontStyle(NORMAL), FontStyle(LIGHT) }, 1 },
-        { FontStyle(LIGHT), { FontStyle(BOLD), FontStyle(LIGHT) }, 1 },
-        { FontStyle(NORMAL), { FontStyle(NORMAL), FontStyle(LIGHT) }, 0 },
-        { FontStyle(NORMAL), { FontStyle(NORMAL), FontStyle(BOLD) }, 0 },
-        { FontStyle(LIGHT), { FontStyle(LIGHT), FontStyle(NORMAL), FontStyle(BOLD) }, 0 },
-        { FontStyle(NORMAL), { FontStyle(LIGHT), FontStyle(NORMAL), FontStyle(BOLD) }, 1 },
-        { FontStyle(BOLD), { FontStyle(LIGHT), FontStyle(NORMAL), FontStyle(BOLD) }, 2 },
+            // Exact matches
+            {FontStyle(BOLD), {FontStyle(NORMAL), FontStyle(BOLD)}, 1},
+            {FontStyle(BOLD), {FontStyle(LIGHT), FontStyle(BOLD)}, 1},
+            {FontStyle(LIGHT), {FontStyle(NORMAL), FontStyle(LIGHT)}, 1},
+            {FontStyle(LIGHT), {FontStyle(BOLD), FontStyle(LIGHT)}, 1},
+            {FontStyle(NORMAL), {FontStyle(NORMAL), FontStyle(LIGHT)}, 0},
+            {FontStyle(NORMAL), {FontStyle(NORMAL), FontStyle(BOLD)}, 0},
+            {FontStyle(LIGHT), {FontStyle(LIGHT), FontStyle(NORMAL), FontStyle(BOLD)}, 0},
+            {FontStyle(NORMAL), {FontStyle(LIGHT), FontStyle(NORMAL), FontStyle(BOLD)}, 1},
+            {FontStyle(BOLD), {FontStyle(LIGHT), FontStyle(NORMAL), FontStyle(BOLD)}, 2},
 
-        { FontStyle(UPRIGHT), { FontStyle(UPRIGHT), FontStyle(ITALIC) }, 0 },
-        { FontStyle(ITALIC), { FontStyle(UPRIGHT), FontStyle(ITALIC) }, 1 },
+            {FontStyle(UPRIGHT), {FontStyle(UPRIGHT), FontStyle(ITALIC)}, 0},
+            {FontStyle(ITALIC), {FontStyle(UPRIGHT), FontStyle(ITALIC)}, 1},
 
-        { FontStyle(NORMAL, UPRIGHT), STANDARD_SET, 0 },
-        { FontStyle(BOLD, UPRIGHT), STANDARD_SET, 1 },
-        { FontStyle(NORMAL, ITALIC), STANDARD_SET, 2 },
-        { FontStyle(BOLD, ITALIC), STANDARD_SET, 3 },
+            {FontStyle(NORMAL, UPRIGHT), STANDARD_SET, 0},
+            {FontStyle(BOLD, UPRIGHT), STANDARD_SET, 1},
+            {FontStyle(NORMAL, ITALIC), STANDARD_SET, 2},
+            {FontStyle(BOLD, ITALIC), STANDARD_SET, 3},
 
-        { FontStyle(NORMAL, UPRIGHT), FULL_SET, 2 },
-        { FontStyle(BOLD, UPRIGHT), FULL_SET, 4 },
-        { FontStyle(NORMAL, ITALIC), FULL_SET, 8 },
-        { FontStyle(BOLD, ITALIC), FULL_SET, 10 },
+            {FontStyle(NORMAL, UPRIGHT), FULL_SET, 2},
+            {FontStyle(BOLD, UPRIGHT), FULL_SET, 4},
+            {FontStyle(NORMAL, ITALIC), FULL_SET, 8},
+            {FontStyle(BOLD, ITALIC), FULL_SET, 10},
 
-        // TODO: Add fallback expectations. (b/68814338)
+            // TODO: Add fallback expectations. (b/68814338)
     };
 
     for (const TestCase& testCase : testCases) {
@@ -808,11 +748,11 @@ TEST_F(FontFamilyTest, closestMatch) {
         }
         ASSERT_NE(idx, dummyFonts.size()) << "The selected font is unknown.";
         EXPECT_EQ(testCase.expectedIndex, idx)
-            << "Input Style: " << fontStyleToString(testCase.wantedStyle) << std::endl
-            << "Actual Families' Style: "
-            << fontStyleToString(testCase.familyStyles[idx]) << std::endl
-            << "Expected Families' Style: "
-            << fontStyleToString(testCase.familyStyles[testCase.expectedIndex]) << std::endl;
+                << "Input Style: " << fontStyleToString(testCase.wantedStyle) << std::endl
+                << "Actual Families' Style: " << fontStyleToString(testCase.familyStyles[idx])
+                << std::endl
+                << "Expected Families' Style: "
+                << fontStyleToString(testCase.familyStyles[testCase.expectedIndex]) << std::endl;
     }
 }
 

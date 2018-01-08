@@ -19,8 +19,8 @@
 #include <gtest/gtest.h>
 
 #include "minikin/FontCollection.h"
+
 #include "FontTestUtils.h"
-#include "ICUTestBase.h"
 #include "UnicodeUtils.h"
 
 const char* SYSTEM_FONT_PATH = "/system/fonts/";
@@ -46,10 +46,9 @@ static void resetAdvances(float* advances, size_t length) {
     }
 }
 
-class LayoutTest : public ICUTestBase {
+class LayoutTest : public testing::Test {
 protected:
-    LayoutTest() : mCollection(nullptr) {
-    }
+    LayoutTest() : mCollection(nullptr) {}
 
     virtual ~LayoutTest() {}
 
@@ -58,8 +57,7 @@ protected:
                 getFontCollection(SYSTEM_FONT_PATH, SYSTEM_FONT_XML));
     }
 
-    virtual void TearDown() override {
-    }
+    virtual void TearDown() override {}
 
     std::shared_ptr<FontCollection> mCollection;
 };
@@ -343,10 +341,12 @@ TEST_F(LayoutTest, doLayoutTest_rtlTest) {
     std::vector<uint16_t> text = parseUnicodeString("'a' 'b' U+3042 U+3043 'c' 'd'");
 
     Layout ltrLayout;
-    ltrLayout.doLayout(text.data(), 0, text.size(), text.size(), Bidi::FORCE_LTR, paint, mCollection);
+    ltrLayout.doLayout(text.data(), 0, text.size(), text.size(), Bidi::FORCE_LTR, paint,
+                       mCollection);
 
     Layout rtlLayout;
-    rtlLayout.doLayout(text.data(), 0, text.size(), text.size(), Bidi::FORCE_RTL, paint, mCollection);
+    rtlLayout.doLayout(text.data(), 0, text.size(), text.size(), Bidi::FORCE_RTL, paint,
+                       mCollection);
 
     ASSERT_EQ(ltrLayout.nGlyphs(), rtlLayout.nGlyphs());
     ASSERT_EQ(6u, ltrLayout.nGlyphs());
@@ -372,7 +372,7 @@ TEST_F(LayoutTest, singleRunBidiTest) {
 
     Layout defaultRtlLayout;
     defaultRtlLayout.doLayout(text.data(), 0, text.size(), text.size(), Bidi::DEFAULT_RTL, paint,
-            mCollection);
+                              mCollection);
 
     const size_t nGlyphs = ltrLayout.nGlyphs();
     ASSERT_EQ(3u, nGlyphs);
@@ -413,8 +413,8 @@ TEST_F(LayoutTest, hyphenationTest) {
         SCOPED_TRACE("one word with hyphen replacement at the end");
         text = utf8ToUtf16("oneword");
         MinikinPaint paint;
-        paint.hyphenEdit = packHyphenEdit(
-                StartHyphenEdit::NO_EDIT, EndHyphenEdit::REPLACE_WITH_HYPHEN);
+        paint.hyphenEdit =
+                packHyphenEdit(StartHyphenEdit::NO_EDIT, EndHyphenEdit::REPLACE_WITH_HYPHEN);
         layout.doLayout(text.data(), 0, text.size(), text.size(), Bidi::LTR, paint, mCollection);
         EXPECT_EQ(70.0f, layout.getAdvance());
     }
@@ -430,8 +430,8 @@ TEST_F(LayoutTest, hyphenationTest) {
         SCOPED_TRACE("one word with hyphen insertion at the both ends");
         text = utf8ToUtf16("oneword");
         MinikinPaint paint;
-        paint.hyphenEdit = packHyphenEdit(
-                StartHyphenEdit::INSERT_HYPHEN, EndHyphenEdit::INSERT_HYPHEN);
+        paint.hyphenEdit =
+                packHyphenEdit(StartHyphenEdit::INSERT_HYPHEN, EndHyphenEdit::INSERT_HYPHEN);
         layout.doLayout(text.data(), 0, text.size(), text.size(), Bidi::LTR, paint, mCollection);
         EXPECT_EQ(90.0f, layout.getAdvance());
     }

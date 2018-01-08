@@ -18,7 +18,6 @@
 
 #include <gtest/gtest.h>
 
-#include "ICUTestBase.h"
 #include "LocaleListCache.h"
 #include "MinikinInternal.h"
 
@@ -67,16 +66,14 @@ class TestableHyphenatorMap : public HyphenatorMap {
 public:
     TestableHyphenatorMap() : HyphenatorMap() {}
 
-    using HyphenatorMap::addInternal;
     using HyphenatorMap::addAliasInternal;
+    using HyphenatorMap::addInternal;
     using HyphenatorMap::lookupInternal;
 };
 
-class HyphenatorMapTest : public ICUTestBase {
+class HyphenatorMapTest : public testing::Test {
 protected:
     virtual void SetUp() override {
-        ICUTestBase::SetUp();
-
         // Following settings are copied from Hyphenator.java.
         mMap.addInternal("as", AS_HYPHENATOR);
         mMap.addInternal("bg", BG_HYPHENATOR);
@@ -131,7 +128,6 @@ protected:
         mMap.addAliasInternal("gez", "und-Ethi");
         mMap.addAliasInternal("ti", "und-Ethi");
         mMap.addAliasInternal("wal", "und-Ethi");
-
     }
 
     const Locale& getLocale(const std::string& localeStr) {

@@ -20,6 +20,7 @@
 #include <map>
 
 #include "minikin/Hyphenator.h"
+
 #include "Locale.h"
 
 namespace minikin {
@@ -35,6 +36,9 @@ public:
     static void addAlias(const std::string& fromLocaleStr, const std::string& toLocaleStr) {
         getInstance().addAliasInternal(fromLocaleStr, toLocaleStr);
     }
+
+    // Remove all hyphenators from the map. This is test only method.
+    static void clear() { getInstance().clearInternal(); }
 
     // The returned pointer is never a dangling pointer. If nothing found for a given locale,
     // returns a hyphenator which only processes soft hyphens.
@@ -52,7 +56,7 @@ public:
 
 protected:
     // The following five methods are protected for testing purposes.
-    HyphenatorMap(); // Use getInstance() instead.
+    HyphenatorMap();  // Use getInstance() instead.
     void addInternal(const std::string& localeStr, const Hyphenator* hyphenator);
     void addAliasInternal(const std::string& fromLocaleStr, const std::string& toLocaleStr);
     const Hyphenator* lookupInternal(const Locale& locale);
@@ -62,6 +66,8 @@ private:
         static HyphenatorMap map;
         return map;
     }
+
+    void clearInternal();
 
     void addInternalLocked(const Locale& locale, const Hyphenator* hyphenator);
     const Hyphenator* lookupByIdentifierLocked(uint64_t id) const;
@@ -73,4 +79,4 @@ private:
 
 }  // namespace minikin
 
-#endif   // MINIKIN_HYPHENATOR_MAP_H
+#endif  // MINIKIN_HYPHENATOR_MAP_H
