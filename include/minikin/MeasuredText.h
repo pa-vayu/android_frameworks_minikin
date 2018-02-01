@@ -44,8 +44,8 @@ public:
     virtual uint32_t getLocaleListId() const = 0;
 
     // Fills the each character's advances, extents and overhangs.
-    virtual void getMetrics(const U16StringPiece& text, float* advances, MinikinExtent* extents,
-                            LayoutOverhang* overhangs) const = 0;
+    virtual void getMetrics(const U16StringPiece& text, float* advances,
+                            MinikinExtent* extents) const = 0;
 
     // Following two methods are only called when the implementation returns true for
     // canHyphenate method.
@@ -54,12 +54,13 @@ public:
     // Returns null if canHyphenate has not returned true.
     virtual const MinikinPaint* getPaint() const { return nullptr; }
 
+    virtual void addToLayoutPieces(const U16StringPiece&, LayoutPieces*) const {}
+
     // Measures the hyphenation piece and fills each character's advances and overhangs.
     virtual float measureHyphenPiece(const U16StringPiece& /* text */,
                                      const Range& /* hyphenPieceRange */,
                                      StartHyphenEdit /* startHyphen */,
-                                     EndHyphenEdit /* endHyphen */, float* /* advances */,
-                                     LayoutOverhang* /* overhangs */) const {
+                                     EndHyphenEdit /* endHyphen */, float* /* advances */) const {
         return 0.0;
     }
 
@@ -82,21 +83,25 @@ public:
     uint32_t getLocaleListId() const override { return mPaint.localeListId; }
     bool isRtl() const override { return mIsRtl; }
 
-    void getMetrics(const U16StringPiece& text, float* advances, MinikinExtent* extents,
-                    LayoutOverhang* overhangs) const override {
+    void getMetrics(const U16StringPiece& text, float* advances,
+                    MinikinExtent* extents) const override {
         Bidi bidiFlag = mIsRtl ? Bidi::FORCE_RTL : Bidi::FORCE_LTR;
-        Layout::measureText(text, mRange, bidiFlag, mPaint, mCollection, advances, extents,
-                            overhangs);
+        Layout::measureText(text, mRange, bidiFlag, mPaint, mCollection, advances, extents);
     }
 
     const MinikinPaint* getPaint() const override { return &mPaint; }
 
+    virtual void addToLayoutPieces(const U16StringPiece& textBuf, LayoutPieces* out) const {
+        Bidi bidiFlag = mIsRtl ? Bidi::FORCE_RTL : Bidi::FORCE_LTR;
+        Layout::addToLayoutPieces(textBuf, mRange, bidiFlag, mPaint, mCollection, out);
+    }
+
     float measureHyphenPiece(const U16StringPiece& text, const Range& range,
-                             StartHyphenEdit startHyphen, EndHyphenEdit endHyphen, float* advances,
-                             LayoutOverhang* overhangs) const override {
+                             StartHyphenEdit startHyphen, EndHyphenEdit endHyphen,
+                             float* advances) const override {
         Bidi bidiFlag = mIsRtl ? Bidi::FORCE_RTL : Bidi::FORCE_LTR;
         return Layout::measureText(text, range, bidiFlag, mPaint, startHyphen, endHyphen,
-                                   mCollection, advances, nullptr /* extent */, overhangs);
+                                   mCollection, advances, nullptr /* extent */);
     }
 
 private:
@@ -115,7 +120,7 @@ public:
     uint32_t getLocaleListId() const { return mLocaleListId; }
 
     void getMetrics(const U16StringPiece& /* unused */, float* advances,
-                    MinikinExtent* /* unused */, LayoutOverhang* /* unused */) const override {
+                    MinikinExtent* /* unused */) const override {
         advances[0] = mWidth;
         // TODO: Get the extents information from the caller.
     }
@@ -125,15 +130,51 @@ private:
     const uint32_t mLocaleListId;
 };
 
+// Represents a hyphenation break point.
+struct HyphenBreak {
+    // The break offset.
+    uint32_t offset;
+
+    // The hyphenation type.
+    HyphenationType type;
+
+    // The width of preceding piece after break at hyphenation point.
+    float first;
+
+    // The width of following piece after break at hyphenation point.
+    float second;
+
+    HyphenBreak(uint32_t offset, HyphenationType type, float first, float second)
+            : offset(offset), type(type), first(first), second(second) {}
+};
+
 class MeasuredText {
 public:
-    // Following three vectors have the same length.
+    // Character widths.
     std::vector<float> widths;
+
+    // Font vertical extents for characters.
+    // TODO: Introduce compression for extents. Usually, this has the same values for all chars.
     std::vector<MinikinExtent> extents;
-    std::vector<LayoutOverhang> overhangs;
+
+    // Hyphenation points.
+    std::vector<HyphenBreak> hyphenBreaks;
 
     // The style information.
     std::vector<std::unique_ptr<Run>> runs;
+
+    // The copied layout pieces for construcing final layouts.
+    // TODO: Stop assigning width/extents if layout pieces are available for reducing memory impact.
+    LayoutPieces layoutPieces;
+
+    uint32_t getMemoryUsage() const {
+        return sizeof(float) * widths.size() + sizeof(MinikinExtent) * extents.size() +
+               sizeof(HyphenBreak) * hyphenBreaks.size() + layoutPieces.getMemoryUsage();
+    }
+
+    bool buildLayout(const U16StringPiece& textBuf, const Range& range, const MinikinPaint& paint,
+                     const std::shared_ptr<FontCollection>& fc, Bidi bidiFlag, int mtOffset,
+                     Layout* layout);
 
     MeasuredText(MeasuredText&&) = default;
     MeasuredText& operator=(MeasuredText&&) = default;
@@ -143,15 +184,13 @@ public:
 private:
     friend class MeasuredTextBuilder;
 
-    void measure(const U16StringPiece& textBuf);
+    void measure(const U16StringPiece& textBuf, bool computeHyphenation, bool computeLayout);
 
     // Use MeasuredTextBuilder instead.
-    MeasuredText(const U16StringPiece& textBuf, std::vector<std::unique_ptr<Run>>&& runs)
-            : widths(textBuf.size()),
-              extents(textBuf.size()),
-              overhangs(textBuf.size()),
-              runs(std::move(runs)) {
-        measure(textBuf);
+    MeasuredText(const U16StringPiece& textBuf, std::vector<std::unique_ptr<Run>>&& runs,
+                 bool computeHyphenation, bool computeLayout)
+            : widths(textBuf.size()), extents(textBuf.size()), runs(std::move(runs)) {
+        measure(textBuf, computeHyphenation, computeLayout);
     }
 };
 
@@ -175,9 +214,11 @@ public:
         mRuns.emplace_back(std::make_unique<T>(std::forward<Args>(args)...));
     }
 
-    std::unique_ptr<MeasuredText> build(const U16StringPiece& textBuf) {
+    std::unique_ptr<MeasuredText> build(const U16StringPiece& textBuf, bool computeHyphenation,
+                                        bool computeLayout) {
         // Unable to use make_unique here since make_unique is not a friend of MeasuredText.
-        return std::unique_ptr<MeasuredText>(new MeasuredText(textBuf, std::move(mRuns)));
+        return std::unique_ptr<MeasuredText>(
+                new MeasuredText(textBuf, std::move(mRuns), computeHyphenation, computeLayout));
     }
 
     PREVENT_COPY_ASSIGN_AND_MOVE(MeasuredTextBuilder);
