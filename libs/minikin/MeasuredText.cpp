@@ -58,10 +58,11 @@ void MeasuredText::measure(const U16StringPiece& textBuf, bool computeHyphenatio
 }
 
 bool MeasuredText::buildLayout(const U16StringPiece& /*textBuf*/, const Range& range,
-                               const MinikinPaint& paint,
-                               const std::shared_ptr<FontCollection>& /*fc*/, Bidi /*bidiFlag*/,
-                               int mtOffset, Layout* layout) {
-    if (paint.wordSpacing != 0.0f || paint.hyphenEdit != 0) {
+                               const MinikinPaint& paint, Bidi /*bidiFlag*/, int mtOffset,
+                               StartHyphenEdit startHyphen, EndHyphenEdit endHyphen,
+                               Layout* layout) {
+    if (paint.wordSpacing != 0.0f || startHyphen != StartHyphenEdit::NO_EDIT ||
+        endHyphen != EndHyphenEdit::NO_EDIT) {
         // TODO: Use layout result as much as possible even if justified lines and hyphenated lines.
         return false;
     }
