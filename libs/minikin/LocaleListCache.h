@@ -17,7 +17,10 @@
 #ifndef MINIKIN_LOCALE_LIST_CACHE_H
 #define MINIKIN_LOCALE_LIST_CACHE_H
 
+#include <mutex>
 #include <unordered_map>
+
+#include "minikin/Macros.h"
 
 #include "Locale.h"
 
@@ -35,22 +38,34 @@ public:
 
     // Returns the locale list ID for the given string representation of LocaleList.
     // Caller should acquire a lock before calling the method.
-    static uint32_t getId(const std::string& locales);
+    static inline uint32_t getId(const std::string& locales) {
+        return getInstance().getIdInternal(locales);
+    }
 
     // Caller should acquire a lock before calling the method.
-    static const LocaleList& getById(uint32_t id);
+    static inline const LocaleList& getById(uint32_t id) {
+        return getInstance().getByIdInternal(id);
+    }
 
 private:
-    LocaleListCache() {}  // Singleton
+    LocaleListCache();  // Singleton
     ~LocaleListCache() {}
 
-    // Caller should acquire a lock before calling the method.
-    static LocaleListCache* getInstance();
+    uint32_t getIdInternal(const std::string& locales);
+    const LocaleList& getByIdInternal(uint32_t id);
 
-    std::vector<LocaleList> mLocaleLists;
+    // Caller should acquire a lock before calling the method.
+    static LocaleListCache& getInstance() {
+        static LocaleListCache instance;
+        return instance;
+    }
+
+    std::vector<LocaleList> mLocaleLists GUARDED_BY(mMutex);
 
     // A map from the string representation of the font locale list to the ID.
-    std::unordered_map<std::string, uint32_t> mLocaleListLookupTable;
+    std::unordered_map<std::string, uint32_t> mLocaleListLookupTable GUARDED_BY(mMutex);
+
+    std::mutex mMutex;
 };
 
 }  // namespace minikin
