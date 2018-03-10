@@ -42,7 +42,7 @@ static inline T max(T a, T b) {
 const uint32_t EMOJI_STYLE_VS = 0xFE0F;
 const uint32_t TEXT_STYLE_VS = 0xFE0E;
 
-uint32_t FontCollection::sNextId = 0;
+static std::atomic<uint32_t> gNextCollectionId = {0};
 
 FontCollection::FontCollection(std::shared_ptr<FontFamily>&& typeface) : mMaxChar(0) {
     std::vector<std::shared_ptr<FontFamily>> typefaces;
@@ -55,8 +55,7 @@ FontCollection::FontCollection(const vector<std::shared_ptr<FontFamily>>& typefa
 }
 
 void FontCollection::init(const vector<std::shared_ptr<FontFamily>>& typefaces) {
-    android::AutoMutex _l(gMinikinLock);
-    mId = sNextId++;
+    mId = gNextCollectionId++;
     vector<uint32_t> lastChar;
     size_t nTypefaces = typefaces.size();
     const FontStyle defaultStyle;
@@ -127,7 +126,7 @@ const uint32_t kFirstFontScore = UINT32_MAX;
 uint32_t FontCollection::calcFamilyScore(uint32_t ch, uint32_t vs, FontFamily::Variant variant,
                                          uint32_t localeListId,
                                          const std::shared_ptr<FontFamily>& fontFamily) const {
-    const uint32_t coverageScore = calcCoverageScore(ch, vs, fontFamily);
+    const uint32_t coverageScore = calcCoverageScore(ch, vs, localeListId, fontFamily);
     if (coverageScore == kFirstFontScore || coverageScore == kUnsupportedFontScore) {
         // No need to calculate other scores.
         return coverageScore;
@@ -152,7 +151,7 @@ uint32_t FontCollection::calcFamilyScore(uint32_t ch, uint32_t vs, FontFamily::V
 // - Returns 2 if the vs is a text variation selector (U+FE0E) and if the font is not an emoji font.
 // - Returns 1 if the variation selector is not specified or if the font family only supports the
 //   variation sequence's base character.
-uint32_t FontCollection::calcCoverageScore(uint32_t ch, uint32_t vs,
+uint32_t FontCollection::calcCoverageScore(uint32_t ch, uint32_t vs, uint32_t localeListId,
                                            const std::shared_ptr<FontFamily>& fontFamily) const {
     const bool hasVSGlyph = (vs != 0) && fontFamily->hasGlyph(ch, vs);
     if (!hasVSGlyph && !fontFamily->getCoverage().get(ch)) {
@@ -166,31 +165,33 @@ uint32_t FontCollection::calcCoverageScore(uint32_t ch, uint32_t vs,
         return kFirstFontScore;
     }
 
-    if (vs == 0) {
-        return 1;
-    }
-
-    if (hasVSGlyph) {
+    if (vs != 0 && hasVSGlyph) {
         return 3;
     }
 
-    if (vs == EMOJI_STYLE_VS || vs == TEXT_STYLE_VS) {
-        const LocaleList& locales = LocaleListCache::getById(fontFamily->localeListId());
-        bool hasEmojiFlag = false;
-        for (size_t i = 0; i < locales.size(); ++i) {
-            if (locales[i].getEmojiStyle() == Locale::EMSTYLE_EMOJI) {
-                hasEmojiFlag = true;
+    bool colorEmojiRequest;
+    if (vs == EMOJI_STYLE_VS) {
+        colorEmojiRequest = true;
+    } else if (vs == TEXT_STYLE_VS) {
+        colorEmojiRequest = false;
+    } else {
+        switch (LocaleListCache::getById(localeListId).getEmojiStyle()) {
+            case EmojiStyle::EMOJI:
+                colorEmojiRequest = true;
                 break;
-            }
-        }
-
-        if (vs == EMOJI_STYLE_VS) {
-            return hasEmojiFlag ? 2 : 1;
-        } else {  // vs == TEXT_STYLE_VS
-            return hasEmojiFlag ? 1 : 2;
+            case EmojiStyle::TEXT:
+                colorEmojiRequest = false;
+                break;
+            case EmojiStyle::EMPTY:
+            case EmojiStyle::DEFAULT:
+            default:
+                // Do not give any extra score for the default emoji style.
+                return 1;
+                break;
         }
     }
-    return 1;
+
+    return colorEmojiRequest == fontFamily->isColorEmojiFamily() ? 2 : 1;
 }
 
 // Calculate font scores based on the script matching, subtag matching and primary locale matching.
@@ -298,9 +299,7 @@ const std::shared_ptr<FontFamily>& FontCollection::getFamilyForChar(
 // properly by Minikin or HarfBuzz even if the font does not explicitly support them and it's
 // usually meaningless to switch to a different font to display them.
 static bool doesNotNeedFontSupport(uint32_t c) {
-    return c == 0x000A                      // LINE FEED
-           || c == 0x000D                   // CARRIAGE RETURN
-           || c == 0x00AD                   // SOFT HYPHEN
+    return c == 0x00AD                      // SOFT HYPHEN
            || c == 0x034F                   // COMBINING GRAPHEME JOINER
            || c == 0x061C                   // ARABIC LETTER MARK
            || (0x200C <= c && c <= 0x200F)  // ZERO WIDTH NON-JOINER..RIGHT-TO-LEFT MARK
@@ -349,9 +348,6 @@ bool FontCollection::hasVariationSelector(uint32_t baseCodepoint,
             return true;
         }
     }
-
-    // TODO: We can remove this lock by precomputing color emoji information.
-    android::AutoMutex _l(gMinikinLock);
 
     // Even if there is no cmap format 14 subtable entry for the given sequence, should return true
     // for <char, text presentation selector> case since we have special fallback rule for the

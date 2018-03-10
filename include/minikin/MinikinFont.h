@@ -64,6 +64,14 @@ struct MinikinPaint {
     MinikinPaint(MinikinPaint&&) = default;
     MinikinPaint& operator=(MinikinPaint&&) = default;
 
+    inline bool operator==(const MinikinPaint& paint) {
+        return size == paint.size && scaleX == paint.scaleX && skewX == paint.skewX &&
+               letterSpacing == paint.letterSpacing && wordSpacing == paint.wordSpacing &&
+               paintFlags == paint.paintFlags && localeListId == paint.localeListId &&
+               fontStyle == paint.fontStyle && familyVariant == paint.familyVariant &&
+               fontFeatureSettings == paint.fontFeatureSettings && font.get() == paint.font.get();
+    }
+
 private:
     // Forbid implicit copy and assign. Use copyFrom instead.
     MinikinPaint(const MinikinPaint&) = default;
@@ -117,7 +125,7 @@ class MinikinFont {
 public:
     explicit MinikinFont(int32_t uniqueId) : mUniqueId(uniqueId) {}
 
-    virtual ~MinikinFont();
+    virtual ~MinikinFont() {}
 
     virtual float GetHorizontalAdvance(uint32_t glyph_id, const MinikinPaint& paint,
                                        const FontFakery& fakery) const = 0;

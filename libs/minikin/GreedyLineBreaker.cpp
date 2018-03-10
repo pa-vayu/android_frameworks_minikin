@@ -124,7 +124,7 @@ private:
     // The result of line breaking.
     std::vector<BreakPoint> mBreakPoints;
 
-    PREVENT_COPY_ASSIGN_AND_MOVE(GreedyLineBreaker);
+    MINIKIN_PREVENT_COPY_ASSIGN_AND_MOVE(GreedyLineBreaker);
 };
 
 void GreedyLineBreaker::breakLineAt(uint32_t offset, float lineWidth, float remainingNextLineWidth,
@@ -361,8 +361,11 @@ LineBreakResult GreedyLineBreaker::getResult() const {
         bool hasTabChar = false;
         MinikinExtent extent = {0.0, 0.0, 0.0};
         for (uint32_t i = prevBreakOffset; i < breakPoint.offset; ++i) {
-            hasTabChar |= mTextBuf[i] == CHAR_TAB;
-            extent.extendBy(mMeasuredText.extents[i]);
+            const uint16_t c = mTextBuf[i];
+            hasTabChar |= c == CHAR_TAB;
+            if (!isLineSpaceExcludeChar(c)) {
+                extent.extendBy(mMeasuredText.extents[i]);
+            }
         }
 
         out.breakPoints.push_back(breakPoint.offset);

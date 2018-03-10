@@ -82,7 +82,7 @@ private:
                              uint32_t localeListId,
                              const std::shared_ptr<FontFamily>& fontFamily) const;
 
-    uint32_t calcCoverageScore(uint32_t ch, uint32_t vs,
+    uint32_t calcCoverageScore(uint32_t ch, uint32_t vs, uint32_t localeListId,
                                const std::shared_ptr<FontFamily>& fontFamily) const;
 
     static uint32_t calcLocaleMatchingScore(uint32_t userLocaleListId,
@@ -90,9 +90,6 @@ private:
 
     static uint32_t calcVariantMatchingScore(FontFamily::Variant variant,
                                              const FontFamily& fontFamily);
-
-    // static for allocating unique id's
-    static uint32_t sNextId;
 
     // unique id for this font collection (suitable for cache key)
     uint32_t mId;

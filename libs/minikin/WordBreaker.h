@@ -24,9 +24,11 @@
 #define MINIKIN_WORD_BREAKER_H
 
 #include <list>
+#include <mutex>
 
 #include <unicode/brkiter.h>
 
+#include "minikin/Macros.h"
 #include "minikin/Range.h"
 
 #include "Locale.h"
@@ -73,10 +75,14 @@ protected:
     // protected for testing purposes.
     static constexpr size_t MAX_POOL_SIZE = 4;
     ICULineBreakerPoolImpl(){};  // singleton.
-    size_t getPoolSize() const { return mPool.size(); }
+    size_t getPoolSize() const {
+        std::lock_guard<std::mutex> lock(mMutex);
+        return mPool.size();
+    }
 
 private:
-    std::list<Slot> mPool;  // Guarded by gMinikinLock
+    std::list<Slot> mPool GUARDED_BY(mMutex);
+    mutable std::mutex mMutex;
 };
 
 class WordBreaker {

@@ -28,13 +28,11 @@
 namespace minikin {
 
 static const LocaleList& createLocaleList(const std::string& input) {
-    android::AutoMutex _l(gMinikinLock);
     uint32_t localeListId = LocaleListCache::getId(input);
     return LocaleListCache::getById(localeListId);
 }
 
 static Locale createLocale(const std::string& input) {
-    android::AutoMutex _l(gMinikinLock);
     uint32_t localeListId = LocaleListCache::getId(input);
     return LocaleListCache::getById(localeListId)[0];
 }
@@ -329,14 +327,14 @@ TEST(LocaleListTest, identifierTest) {
 
 TEST(LocaleListTest, undEmojiTests) {
     Locale emoji = createLocale("und-Zsye");
-    EXPECT_EQ(Locale::EMSTYLE_EMOJI, emoji.getEmojiStyle());
+    EXPECT_EQ(EmojiStyle::EMOJI, emoji.getEmojiStyle());
 
     Locale und = createLocale("und");
-    EXPECT_EQ(Locale::EMSTYLE_EMPTY, und.getEmojiStyle());
+    EXPECT_EQ(EmojiStyle::EMPTY, und.getEmojiStyle());
     EXPECT_FALSE(emoji == und);
 
     Locale undExample = createLocale("und-example");
-    EXPECT_EQ(Locale::EMSTYLE_EMPTY, undExample.getEmojiStyle());
+    EXPECT_EQ(EmojiStyle::EMPTY, undExample.getEmojiStyle());
     EXPECT_FALSE(emoji == undExample);
 }
 
@@ -363,7 +361,7 @@ TEST(LocaleListTest, subtagEmojiTest) {
     for (auto subtagEmojiString : subtagEmojiStrings) {
         SCOPED_TRACE("Test for \"" + subtagEmojiString + "\"");
         Locale subtagEmoji = createLocale(subtagEmojiString);
-        EXPECT_EQ(Locale::EMSTYLE_EMOJI, subtagEmoji.getEmojiStyle());
+        EXPECT_EQ(EmojiStyle::EMOJI, subtagEmoji.getEmojiStyle());
     }
 }
 
@@ -390,7 +388,7 @@ TEST(LocaleListTest, subtagTextTest) {
     for (auto subtagTextString : subtagTextStrings) {
         SCOPED_TRACE("Test for \"" + subtagTextString + "\"");
         Locale subtagText = createLocale(subtagTextString);
-        EXPECT_EQ(Locale::EMSTYLE_TEXT, subtagText.getEmojiStyle());
+        EXPECT_EQ(EmojiStyle::TEXT, subtagText.getEmojiStyle());
     }
 }
 
@@ -418,7 +416,7 @@ TEST(LocaleListTest, subtagDefaultTest) {
     for (auto subtagDefaultString : subtagDefaultStrings) {
         SCOPED_TRACE("Test for \"" + subtagDefaultString + "\"");
         Locale subtagDefault = createLocale(subtagDefaultString);
-        EXPECT_EQ(Locale::EMSTYLE_DEFAULT, subtagDefault.getEmojiStyle());
+        EXPECT_EQ(EmojiStyle::DEFAULT, subtagDefault.getEmojiStyle());
     }
 }
 
@@ -437,7 +435,7 @@ TEST(LocaleListTest, subtagEmptyTest) {
     for (auto subtagEmptyString : subtagEmptyStrings) {
         SCOPED_TRACE("Test for \"" + subtagEmptyString + "\"");
         Locale subtagEmpty = createLocale(subtagEmptyString);
-        EXPECT_EQ(Locale::EMSTYLE_EMPTY, subtagEmpty.getEmojiStyle());
+        EXPECT_EQ(EmojiStyle::EMPTY, subtagEmpty.getEmojiStyle());
     }
 }
 
@@ -474,12 +472,12 @@ TEST(LocaleListTest, registerLocaleListTest) {
 // U+717D U+FE02 (VS3)
 // U+717D U+E0102 (VS19)
 // U+717D U+E0103 (VS20)
-const char kVsTestFont[] = kTestFontDir "VariationSelectorTest-Regular.ttf";
+const char kVsTestFont[] = "VariationSelectorTest-Regular.ttf";
 
 class FontFamilyTest : public testing::Test {
 public:
     virtual void SetUp() override {
-        if (access(kVsTestFont, R_OK) != 0) {
+        if (access(getTestFontPath(kVsTestFont).c_str(), R_OK) != 0) {
             FAIL() << "Unable to read " << kVsTestFont << ". "
                    << "Please prepare the test data directory. "
                    << "For more details, please see how_to_run.txt.";
@@ -542,9 +540,8 @@ TEST_F(FontFamilyTest, hasVSTableTest) {
         const std::string fontPath;
         bool hasVSTable;
     } testCases[] = {
-            {kTestFontDir "Ja.ttf", true},     {kTestFontDir "ZhHant.ttf", true},
-            {kTestFontDir "ZhHans.ttf", true}, {kTestFontDir "Italic.ttf", false},
-            {kTestFontDir "Bold.ttf", false},  {kTestFontDir "BoldItalic.ttf", false},
+            {"Ja.ttf", true},      {"ZhHant.ttf", true}, {"ZhHans.ttf", true},
+            {"Italic.ttf", false}, {"Bold.ttf", false},  {"BoldItalic.ttf", false},
     };
 
     for (auto testCase : testCases) {
@@ -560,8 +557,8 @@ TEST_F(FontFamilyTest, hasVSTableTest) {
 
 TEST_F(FontFamilyTest, createFamilyWithVariationTest) {
     // This font has 'wdth' and 'wght' axes.
-    const char kMultiAxisFont[] = kTestFontDir "/MultiAxis.ttf";
-    const char kNoAxisFont[] = kTestFontDir "/Regular.ttf";
+    const char kMultiAxisFont[] = "MultiAxis.ttf";
+    const char kNoAxisFont[] = "Regular.ttf";
 
     std::shared_ptr<FontFamily> multiAxisFamily = buildFontFamily(kMultiAxisFont);
     std::shared_ptr<FontFamily> noAxisFamily = buildFontFamily(kNoAxisFont);
@@ -612,22 +609,20 @@ TEST_F(FontFamilyTest, createFamilyWithVariationTest) {
 TEST_F(FontFamilyTest, coverageTableSelectionTest) {
     // This font supports U+0061. The cmap subtable is format 4 and its platform ID is 0 and
     // encoding ID is 1.
-    const char kUnicodeEncoding1Font[] = kTestFontDir "UnicodeBMPOnly.ttf";
+    const char kUnicodeEncoding1Font[] = "UnicodeBMPOnly.ttf";
 
     // This font supports U+0061. The cmap subtable is format 4 and its platform ID is 0 and
     // encoding ID is 3.
-    const char kUnicodeEncoding3Font[] = kTestFontDir "UnicodeBMPOnly2.ttf";
+    const char kUnicodeEncoding3Font[] = "UnicodeBMPOnly2.ttf";
 
     // This font has both cmap format 4 subtable which platform ID is 0 and encoding ID is 1
     // and cmap format 14 subtable which platform ID is 0 and encoding ID is 10.
     // U+0061 is listed in both subtable but U+1F926 is only listed in latter.
-    const char kUnicodeEncoding4Font[] = kTestFontDir "UnicodeUCS4.ttf";
+    const char kUnicodeEncoding4Font[] = "UnicodeUCS4.ttf";
 
     std::shared_ptr<FontFamily> unicodeEnc1Font = buildFontFamily(kUnicodeEncoding1Font);
     std::shared_ptr<FontFamily> unicodeEnc3Font = buildFontFamily(kUnicodeEncoding3Font);
     std::shared_ptr<FontFamily> unicodeEnc4Font = buildFontFamily(kUnicodeEncoding4Font);
-
-    android::AutoMutex _l(gMinikinLock);
 
     EXPECT_TRUE(unicodeEnc1Font->hasGlyph(0x0061, 0));
     EXPECT_TRUE(unicodeEnc3Font->hasGlyph(0x0061, 0));
@@ -652,7 +647,7 @@ std::string fontStyleToString(const FontStyle& style) {
 }
 
 TEST_F(FontFamilyTest, closestMatch) {
-    constexpr char ROBOTO[] = "/system/fonts/Roboto-Regular.ttf";
+    constexpr char kTestFont[] = "Ascii.ttf";
 
     constexpr FontStyle::Weight THIN = FontStyle::Weight::THIN;
     constexpr FontStyle::Weight LIGHT = FontStyle::Weight::LIGHT;
@@ -723,9 +718,10 @@ TEST_F(FontFamilyTest, closestMatch) {
         std::vector<std::shared_ptr<MinikinFont>> dummyFonts;
         std::vector<Font> fonts;
         for (auto familyStyle : testCase.familyStyles) {
-            std::shared_ptr<MinikinFont> dummyFont(new FreeTypeMinikinFontForTest(ROBOTO));
+            std::shared_ptr<MinikinFont> dummyFont(
+                    new FreeTypeMinikinFontForTest(getTestFontPath(kTestFont)));
             dummyFonts.push_back(dummyFont);
-            fonts.push_back(Font(dummyFont, familyStyle));
+            fonts.push_back(Font::Builder(dummyFont).setStyle(familyStyle).build());
         }
 
         FontFamily family(std::move(fonts));
@@ -733,7 +729,7 @@ TEST_F(FontFamilyTest, closestMatch) {
 
         size_t idx = dummyFonts.size();
         for (size_t i = 0; i < dummyFonts.size(); i++) {
-            if (dummyFonts[i].get() == closest.font) {
+            if (dummyFonts[i].get() == closest.font->typeface().get()) {
                 idx = i;
                 break;
             }
