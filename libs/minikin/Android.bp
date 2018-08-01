@@ -25,6 +25,7 @@ cc_library {
     srcs: [
         "Hyphenator.cpp",
     ],
+    cpp_std: "c++17",
     cflags: ["-Wall", "-Werror"],
     target: {
         android: {
@@ -39,6 +40,7 @@ cc_library {
                 "GreedyLineBreaker.cpp",
                 "HyphenatorMap.cpp",
                 "Layout.cpp",
+                "LayoutCore.cpp",
                 "LayoutUtils.cpp",
                 "LineBreaker.cpp",
                 "LineBreakerUtil.cpp",
@@ -63,8 +65,7 @@ cc_library {
             sanitize: {
                 misc_undefined: [
                     "signed-integer-overflow",
-                    // b/26432628.
-                    //"unsigned-integer-overflow",
+                    "unsigned-integer-overflow",
                 ],
             },
         },

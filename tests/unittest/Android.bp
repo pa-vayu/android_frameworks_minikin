@@ -53,6 +53,8 @@ cc_test {
         "GraphemeBreakTests.cpp",
         "GreedyLineBreakerTest.cpp",
         "LayoutCacheTest.cpp",
+        "LayoutCoreTest.cpp",
+        "LayoutSplitterTest.cpp",
         "LayoutTest.cpp",
         "LayoutUtilsTest.cpp",
         "LocaleListTest.cpp",
@@ -66,6 +68,7 @@ cc_test {
         "WordBreakerTests.cpp",
     ],
 
+    cpp_std: "c++17",
     cflags: [
         "-Werror",
         "-Wall",

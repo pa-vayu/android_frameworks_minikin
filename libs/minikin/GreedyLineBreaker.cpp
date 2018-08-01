@@ -193,9 +193,9 @@ bool GreedyLineBreaker::tryLineBreakWithHyphenation(const Range& range, WordBrea
             continue;  // Not a hyphenation point.
         }
 
-        const float width = targetRun->measureHyphenPiece(mTextBuf, contextRange.split(i).first,
-                                                          mStartHyphenEdit, editForThisLine(hyph),
-                                                          nullptr /* advances */, nullptr);
+        const float width =
+                targetRun->measureHyphenPiece(mTextBuf, contextRange.split(i).first,
+                                              mStartHyphenEdit, editForThisLine(hyph), nullptr);
 
         if (width <= mLineWidthLimit) {
             // There are still space, remember current offset and look up next hyphenation point.
@@ -214,7 +214,7 @@ bool GreedyLineBreaker::tryLineBreakWithHyphenation(const Range& range, WordBrea
             const StartHyphenEdit nextLineStartHyphenEdit = editForNextLine(hyph);
             const float remainingCharWidths = targetRun->measureHyphenPiece(
                     mTextBuf, contextRange.split(prevOffset).second, nextLineStartHyphenEdit,
-                    EndHyphenEdit::NO_EDIT, nullptr /* advances */, nullptr);
+                    EndHyphenEdit::NO_EDIT, nullptr);
             breakLineAt(prevOffset, prevWidth,
                         remainingCharWidths - (mSumOfCharWidths - mLineWidth), remainingCharWidths,
                         editForThisLine(hyph), nextLineStartHyphenEdit);
@@ -243,7 +243,7 @@ bool GreedyLineBreaker::tryLineBreakWithHyphenation(const Range& range, WordBrea
         const StartHyphenEdit nextLineStartHyphenEdit = editForNextLine(hyph);
         const float remainingCharWidths = targetRun->measureHyphenPiece(
                 mTextBuf, contextRange.split(prevOffset).second, nextLineStartHyphenEdit,
-                EndHyphenEdit::NO_EDIT, nullptr /* advances */, nullptr);
+                EndHyphenEdit::NO_EDIT, nullptr);
 
         breakLineAt(prevOffset, prevWidth, remainingCharWidths - (mSumOfCharWidths - mLineWidth),
                     remainingCharWidths, editForThisLine(hyph), nextLineStartHyphenEdit);
@@ -359,15 +359,12 @@ LineBreakResult GreedyLineBreaker::getResult() const {
     for (const auto& breakPoint : mBreakPoints) {
         // TODO: compute these during line breaking if these takes longer time.
         bool hasTabChar = false;
-        MinikinExtent extent = {0.0, 0.0, 0.0};
         for (uint32_t i = prevBreakOffset; i < breakPoint.offset; ++i) {
-            const uint16_t c = mTextBuf[i];
-            hasTabChar |= c == CHAR_TAB;
-            if (!isLineSpaceExcludeChar(c)) {
-                extent.extendBy(mMeasuredText.extents[i]);
-            }
+            hasTabChar |= mTextBuf[i] == CHAR_TAB;
         }
 
+        MinikinExtent extent =
+                mMeasuredText.getExtent(mTextBuf, Range(prevBreakOffset, breakPoint.offset));
         out.breakPoints.push_back(breakPoint.offset);
         out.widths.push_back(breakPoint.lineWidth);
         out.ascents.push_back(extent.ascent);
