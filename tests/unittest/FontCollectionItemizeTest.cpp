@@ -103,8 +103,7 @@ std::vector<FontCollection::Run> itemize(const std::shared_ptr<FontCollection>& 
 // Utility function to obtain font path associated with run.
 std::string getFontName(const FontCollection::Run& run) {
     EXPECT_NE(nullptr, run.fakedFont.font);
-    return getBasename(
-            ((FreeTypeMinikinFontForTest*)run.fakedFont.font->typeface().get())->fontPath());
+    return getBasename(run.fakedFont.font->typeface()->GetFontPath());
 }
 
 // Utility function to obtain LocaleList from string.
@@ -926,7 +925,7 @@ TEST(FontCollectionItemizeTest, itemize_LocaleScore) {
         // Prepare first font which doesn't supports U+9AA8
         auto firstFamilyMinikinFont =
                 std::make_shared<FreeTypeMinikinFontForTest>(getTestFontPath(kNoGlyphFont));
-        std::vector<Font> fonts;
+        std::vector<std::shared_ptr<Font>> fonts;
         fonts.push_back(Font::Builder(firstFamilyMinikinFont).build());
         auto firstFamily =
                 std::make_shared<FontFamily>(registerLocaleList("und"), FamilyVariant::DEFAULT,
@@ -941,7 +940,7 @@ TEST(FontCollectionItemizeTest, itemize_LocaleScore) {
         for (size_t i = 0; i < testCase.fontLocales.size(); ++i) {
             auto minikinFont =
                     std::make_shared<FreeTypeMinikinFontForTest>(getTestFontPath(kJAFont));
-            std::vector<Font> fonts;
+            std::vector<std::shared_ptr<Font>> fonts;
             fonts.push_back(Font::Builder(minikinFont).build());
             auto family = std::make_shared<FontFamily>(registerLocaleList(testCase.fontLocales[i]),
                                                        FamilyVariant::DEFAULT, std::move(fonts),
