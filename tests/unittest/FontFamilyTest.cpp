@@ -156,6 +156,40 @@ TEST(LocaleTest, testReconstruction) {
     EXPECT_EQ("zzz-Zzzz-999", createLocaleWithoutICUSanitization("zzz-Zzzz-999").getString());
 }
 
+TEST(LocaleTest, ReconstructFromIdentifierTest) {
+    std::string locales[] = {
+            // Language
+            "en",
+            "fil",
+            "und",
+            // Script
+            "en-Latn",
+            "fil-Taga",
+            "und-Zsye",
+            // Region
+            "en-US",
+            "fil-PH",
+            "es-419",
+            // Variant
+            "de-Latn-DE",
+            "de-Latn-DE-1901",
+            "de-Latn-DE-1996",
+            // Line break style
+            "ja-JP-u-lb-loose",
+            "ja-JP-u-lb-normal",
+            "ja-JP-u-lb-strict",
+            // Emoji subtag
+            "es-Latn-419-u-em-emoji",
+            // Everything
+            "de-Latn-DE-1996-u-lb-loose-u-em-emoji",
+    };
+    for (const std::string& locale : locales) {
+        EXPECT_EQ(createLocaleWithoutICUSanitization(locale),
+                  Locale(createLocaleWithoutICUSanitization(locale).getIdentifier()))
+                << "locale = " << locale;
+    }
+}
+
 TEST(LocaleTest, ScriptEqualTest) {
     EXPECT_TRUE(createLocale("en").isEqualScript(createLocale("en")));
     EXPECT_TRUE(createLocale("en-Latn").isEqualScript(createLocale("en")));
@@ -728,7 +762,7 @@ TEST_F(FontFamilyTest, closestMatch) {
 
     for (const TestCase& testCase : testCases) {
         std::vector<std::shared_ptr<MinikinFont>> dummyFonts;
-        std::vector<Font> fonts;
+        std::vector<std::shared_ptr<Font>> fonts;
         for (auto familyStyle : testCase.familyStyles) {
             std::shared_ptr<MinikinFont> dummyFont(
                     new FreeTypeMinikinFontForTest(getTestFontPath(kTestFont)));

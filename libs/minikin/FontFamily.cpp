@@ -37,10 +37,11 @@
 
 namespace minikin {
 
-Font Font::Builder::build() {
+std::shared_ptr<Font> Font::Builder::build() {
     if (mIsWeightSet && mIsSlantSet) {
         // No need to read OS/2 header of the font file.
-        return Font(std::move(mTypeface), FontStyle(mWeight, mSlant), prepareFont(mTypeface));
+        return std::shared_ptr<Font>(
+                new Font(std::move(mTypeface), FontStyle(mWeight, mSlant), prepareFont(mTypeface)));
     }
 
     HbFontUniquePtr font = prepareFont(mTypeface);
@@ -51,7 +52,29 @@ Font Font::Builder::build() {
     if (!mIsSlantSet) {
         mSlant = styleFromFont.slant();
     }
-    return Font(std::move(mTypeface), FontStyle(mWeight, mSlant), std::move(font));
+    return std::shared_ptr<Font>(
+            new Font(std::move(mTypeface), FontStyle(mWeight, mSlant), std::move(font)));
+}
+
+const std::shared_ptr<MinikinFont>& Font::typeface() const {
+    std::lock_guard lock(mTypefaceMutex);
+    if (mTypeface) return mTypeface;
+    initTypefaceLocked();
+    return mTypeface;
+}
+
+const HbFontUniquePtr& Font::baseFont() const {
+    std::lock_guard lock(mTypefaceMutex);
+    if (mBaseFont) return mBaseFont;
+    initTypefaceLocked();
+    mBaseFont = prepareFont(mTypeface);
+    return mBaseFont;
+}
+
+void Font::initTypefaceLocked() const {
+    if (mTypeface) return;
+    MINIKIN_ASSERT(mTypefaceLoader, "mTypefaceLoader should not be empty when mTypeface is null");
+    mTypeface = mTypefaceLoader();
 }
 
 // static
@@ -95,7 +118,7 @@ FontStyle Font::analyzeStyle(const HbFontUniquePtr& font) {
 }
 
 std::unordered_set<AxisTag> Font::getSupportedAxes() const {
-    HbBlob fvarTable(mBaseFont, MinikinFont::MakeTag('f', 'v', 'a', 'r'));
+    HbBlob fvarTable(baseFont(), MinikinFont::MakeTag('f', 'v', 'a', 'r'));
     if (!fvarTable) {
         return std::unordered_set<AxisTag>();
     }
@@ -104,15 +127,15 @@ std::unordered_set<AxisTag> Font::getSupportedAxes() const {
     return supportedAxes;
 }
 
-FontFamily::FontFamily(std::vector<Font>&& fonts)
+FontFamily::FontFamily(std::vector<std::shared_ptr<Font>>&& fonts)
         : FontFamily(FamilyVariant::DEFAULT, std::move(fonts)) {}
 
-FontFamily::FontFamily(FamilyVariant variant, std::vector<Font>&& fonts)
+FontFamily::FontFamily(FamilyVariant variant, std::vector<std::shared_ptr<Font>>&& fonts)
         : FontFamily(LocaleListCache::kEmptyListId, variant, std::move(fonts),
                      false /* isCustomFallback */) {}
 
-FontFamily::FontFamily(uint32_t localeListId, FamilyVariant variant, std::vector<Font>&& fonts,
-                       bool isCustomFallback)
+FontFamily::FontFamily(uint32_t localeListId, FamilyVariant variant,
+                       std::vector<std::shared_ptr<Font>>&& fonts, bool isCustomFallback)
         : mLocaleListId(localeListId),
           mVariant(variant),
           mFonts(std::move(fonts)),
@@ -144,13 +167,13 @@ static FontFakery computeFakery(FontStyle wanted, FontStyle actual) {
 }
 
 FakedFont FontFamily::getClosestMatch(FontStyle style) const {
-    const Font* bestFont = &mFonts[0];
+    Font* bestFont = mFonts[0].get();
     int bestMatch = computeMatch(bestFont->style(), style);
     for (size_t i = 1; i < mFonts.size(); i++) {
-        const Font& font = mFonts[i];
-        int match = computeMatch(font.style(), style);
+        Font* font = mFonts[i].get();
+        int match = computeMatch(font->style(), style);
         if (i == 0 || match < bestMatch) {
-            bestFont = &font;
+            bestFont = font;
             bestMatch = match;
         }
     }
@@ -168,7 +191,7 @@ void FontFamily::computeCoverage() {
     mCoverage = CmapCoverage::getCoverage(cmapTable.get(), cmapTable.size(), &mCmapFmt14Coverage);
 
     for (size_t i = 0; i < mFonts.size(); ++i) {
-        std::unordered_set<AxisTag> supportedAxes = mFonts[i].getSupportedAxes();
+        std::unordered_set<AxisTag> supportedAxes = mFonts[i]->getSupportedAxes();
         mSupportedAxes.insert(supportedAxes.begin(), supportedAxes.end());
     }
 }
@@ -216,10 +239,10 @@ std::shared_ptr<FontFamily> FontFamily::createFamilyWithVariation(
         return nullptr;
     }
 
-    std::vector<Font> fonts;
-    for (const Font& font : mFonts) {
+    std::vector<std::shared_ptr<Font>> fonts;
+    for (const auto& font : mFonts) {
         bool supportedVariations = false;
-        std::unordered_set<AxisTag> supportedAxes = font.getSupportedAxes();
+        std::unordered_set<AxisTag> supportedAxes = font->getSupportedAxes();
         if (!supportedAxes.empty()) {
             for (const FontVariation& variation : variations) {
                 if (supportedAxes.find(variation.axisTag) != supportedAxes.end()) {
@@ -230,12 +253,13 @@ std::shared_ptr<FontFamily> FontFamily::createFamilyWithVariation(
         }
         std::shared_ptr<MinikinFont> minikinFont;
         if (supportedVariations) {
-            minikinFont = font.typeface()->createFontWithVariation(variations);
+            minikinFont = font->typeface()->createFontWithVariation(variations);
         }
         if (minikinFont == nullptr) {
-            minikinFont = font.typeface();
+            fonts.push_back(font);
+        } else {
+            fonts.push_back(Font::Builder(minikinFont).setStyle(font->style()).build());
         }
-        fonts.push_back(Font::Builder(minikinFont).setStyle(font.style()).build());
     }
 
     return std::shared_ptr<FontFamily>(

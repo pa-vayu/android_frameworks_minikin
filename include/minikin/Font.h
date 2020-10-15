@@ -17,9 +17,12 @@
 #ifndef MINIKIN_FONT_H
 #define MINIKIN_FONT_H
 
+#include <functional>
 #include <memory>
+#include <mutex>
 #include <unordered_set>
 
+#include "minikin/Buffer.h"
 #include "minikin/FontStyle.h"
 #include "minikin/FontVariation.h"
 #include "minikin/HbUtils.h"
@@ -88,7 +91,7 @@ public:
             return *this;
         }
 
-        Font build();
+        std::shared_ptr<Font> build();
 
     private:
         std::shared_ptr<MinikinFont> mTypeface;
@@ -98,20 +101,30 @@ public:
         bool mIsSlantSet = false;
     };
 
-    Font(Font&& o) = default;
-    Font& operator=(Font&& o) = default;
+    // Type for functions to load MinikinFont lazily.
+    using TypefaceLoader = std::function<std::shared_ptr<MinikinFont>()>;
+    // Type for functions to read MinikinFont metadata and construct
+    // TypefaceLoader.
+    using TypefaceReader = TypefaceLoader(BufferReader* reader);
+    // Type for functions to write MinikinFont metadata.
+    using TypefaceWriter = void(BufferWriter* writer, const MinikinFont* typeface);
 
-    Font& operator=(const Font& o) {
-        mTypeface = o.mTypeface;
-        mStyle = o.mStyle;
-        mBaseFont = HbFontUniquePtr(hb_font_reference(o.mBaseFont.get()));
-        return *this;
+    template <TypefaceReader typefaceReader>
+    static std::shared_ptr<Font> readFrom(BufferReader* reader) {
+        FontStyle style = FontStyle(reader);
+        TypefaceLoader typefaceLoader = typefaceReader(reader);
+        return std::shared_ptr<Font>(new Font(style, std::move(typefaceLoader)));
     }
-    Font(const Font& o) { *this = o; }
 
-    inline const std::shared_ptr<MinikinFont>& typeface() const { return mTypeface; }
+    template <TypefaceWriter typefaceWriter>
+    void writeTo(BufferWriter* writer) const {
+        mStyle.writeTo(writer);
+        typefaceWriter(writer, mTypeface.get());
+    }
+
+    const std::shared_ptr<MinikinFont>& typeface() const;
     inline FontStyle style() const { return mStyle; }
-    inline const HbFontUniquePtr& baseFont() const { return mBaseFont; }
+    const HbFontUniquePtr& baseFont() const;
 
     std::unordered_set<AxisTag> getSupportedAxes() const;
 
@@ -119,13 +132,29 @@ private:
     // Use Builder instead.
     Font(std::shared_ptr<MinikinFont>&& typeface, FontStyle style, HbFontUniquePtr&& baseFont)
             : mTypeface(std::move(typeface)), mStyle(style), mBaseFont(std::move(baseFont)) {}
+    Font(FontStyle style, TypefaceLoader&& typefaceLoader)
+            : mStyle(style), mTypefaceLoader(std::move(typefaceLoader)) {}
+
+    void initTypefaceLocked() const EXCLUSIVE_LOCKS_REQUIRED(mTypefaceMutex);
 
     static HbFontUniquePtr prepareFont(const std::shared_ptr<MinikinFont>& typeface);
     static FontStyle analyzeStyle(const HbFontUniquePtr& font);
 
-    std::shared_ptr<MinikinFont> mTypeface;
+    // Lazy-initialized if created by readFrom().
+    mutable std::shared_ptr<MinikinFont> mTypeface GUARDED_BY(mTypefaceMutex);
     FontStyle mStyle;
-    HbFontUniquePtr mBaseFont;
+    // Lazy-initialized if created by readFrom().
+    mutable HbFontUniquePtr mBaseFont GUARDED_BY(mTypefaceMutex);
+
+    mutable std::mutex mTypefaceMutex;
+    // Non-empty if created by readFrom().
+    TypefaceLoader mTypefaceLoader;
+
+    // Stop copying and moving
+    Font(Font&& o) = delete;
+    Font& operator=(Font&& o) = delete;
+    Font(const Font& o) = delete;
+    Font& operator=(const Font& o) = delete;
 };
 
 }  // namespace minikin

@@ -34,7 +34,7 @@ struct MinikinRect;
 // multiple actual implementations of fonts.
 class MinikinFont {
 public:
-    explicit MinikinFont(int32_t uniqueId) : mUniqueId(uniqueId) {}
+    MinikinFont() {}
 
     virtual ~MinikinFont() {}
 
@@ -53,6 +53,9 @@ public:
 
     virtual void GetFontExtent(MinikinExtent* extent, const MinikinPaint& paint,
                                const FontFakery& fakery) const = 0;
+
+    // Returns the font path or an empty string.
+    virtual const std::string& GetFontPath() const = 0;
 
     // Override if font can provide access to raw data
     virtual const void* GetFontData() const { return nullptr; }
@@ -74,11 +77,6 @@ public:
     static uint32_t MakeTag(char c1, char c2, char c3, char c4) {
         return ((uint32_t)c1 << 24) | ((uint32_t)c2 << 16) | ((uint32_t)c3 << 8) | (uint32_t)c4;
     }
-
-    int32_t GetUniqueId() const { return mUniqueId; }
-
-private:
-    const int32_t mUniqueId;
 };
 
 }  // namespace minikin

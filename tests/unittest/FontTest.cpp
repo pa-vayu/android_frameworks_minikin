@@ -18,28 +18,33 @@
 
 #include <gtest/gtest.h>
 
+#include "BufferUtils.h"
 #include "FontTestUtils.h"
 #include "FreeTypeMinikinFontForTest.h"
 
 namespace minikin {
 
-TEST(FontTest, CopyTest) {
+void writeFreeTypeMinikinFontForTest(BufferWriter* writer, const MinikinFont* typeface) {
+    writer->writeString(typeface->GetFontPath());
+}
+
+Font::TypefaceLoader readFreeTypeMinikinFontForTest(BufferReader* reader) {
+    std::string fontPath(reader->readString());
+    return [fontPath]() { return std::make_shared<FreeTypeMinikinFontForTest>(fontPath); };
+}
+
+TEST(FontTest, BufferTest) {
     auto minikinFont = std::make_shared<FreeTypeMinikinFontForTest>(getTestFontPath("Ascii.ttf"));
-    {
-        Font font = Font::Builder(minikinFont).build();
-        {
-            Font copied(font);
-            EXPECT_EQ(font.typeface(), copied.typeface());
-            EXPECT_EQ(font.style(), copied.style());
-            EXPECT_EQ(font.baseFont(), copied.baseFont());
-        }
-        {
-            Font copied = font;
-            EXPECT_EQ(font.typeface(), copied.typeface());
-            EXPECT_EQ(font.style(), copied.style());
-            EXPECT_EQ(font.baseFont(), copied.baseFont());
-        }
-    }
+    std::shared_ptr<Font> original = Font::Builder(minikinFont).build();
+    std::vector<uint8_t> buffer = allocateBuffer<Font, writeFreeTypeMinikinFontForTest>(*original);
+    BufferWriter writer(buffer.data());
+    original->writeTo<writeFreeTypeMinikinFontForTest>(&writer);
+
+    BufferReader reader(buffer.data());
+    std::shared_ptr<Font> font = Font::readFrom<readFreeTypeMinikinFontForTest>(&reader);
+    EXPECT_EQ(minikinFont->GetFontPath(), font->typeface()->GetFontPath());
+    EXPECT_EQ(original->style(), font->style());
+    EXPECT_NE(nullptr, font->baseFont());
 }
 
 }  // namespace minikin
