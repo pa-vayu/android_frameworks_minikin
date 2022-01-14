@@ -429,7 +429,7 @@ LayoutPiece::LayoutPiece(const U16StringPiece& textBuf, const Range& range, bool
             if (localeList.size() != 0) {
                 hb_language_t hbLanguage = localeList.getHbLanguage(0);
                 for (size_t i = 0; i < localeList.size(); ++i) {
-                    if (localeList[i].supportsHbScript(script)) {
+                    if (localeList[i].supportsScript(hb_script_to_iso15924_tag(script))) {
                         hbLanguage = localeList.getHbLanguage(i);
                         break;
                     }

@@ -287,14 +287,13 @@ TEST(LocaleTest, ScriptMatchTest) {
     };
 
     for (const auto& testCase : testCases) {
-        hb_script_t script = hb_script_from_iso15924_tag(
-                HB_TAG(testCase.requestedScript[0], testCase.requestedScript[1],
-                       testCase.requestedScript[2], testCase.requestedScript[3]));
+        uint32_t script = HB_TAG(testCase.requestedScript[0], testCase.requestedScript[1],
+                                 testCase.requestedScript[2], testCase.requestedScript[3]);
         if (testCase.isSupported) {
-            EXPECT_TRUE(createLocale(testCase.baseScript).supportsHbScript(script))
+            EXPECT_TRUE(createLocale(testCase.baseScript).supportsScript(script))
                     << testCase.baseScript << " should support " << testCase.requestedScript;
         } else {
-            EXPECT_FALSE(createLocale(testCase.baseScript).supportsHbScript(script))
+            EXPECT_FALSE(createLocale(testCase.baseScript).supportsScript(script))
                     << testCase.baseScript << " shouldn't support " << testCase.requestedScript;
         }
     }

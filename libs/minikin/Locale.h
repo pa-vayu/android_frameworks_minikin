@@ -133,7 +133,7 @@ public:
 
     // Returns true if this script supports the given script. For example, ja-Jpan supports Hira,
     // ja-Hira doesn't support Jpan.
-    bool supportsHbScript(hb_script_t script) const;
+    bool supportsScript(uint32_t script) const;
 
     std::string getString() const;
 
