@@ -449,7 +449,7 @@ bool Locale::supportsScript(uint8_t providedBits, uint8_t requestedBits) {
     return requestedBits != 0 && (providedBits & requestedBits) == requestedBits;
 }
 
-bool Locale::supportsHbScript(hb_script_t script) const {
+bool Locale::supportsScript(uint32_t script) const {
     static_assert(unpackScript(packScript('J', 'p', 'a', 'n')) == HB_TAG('J', 'p', 'a', 'n'),
                   "The Minikin script and HarfBuzz hb_script_t have different encodings.");
     uint32_t packedScript = packScript(script);
