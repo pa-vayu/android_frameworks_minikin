@@ -233,33 +233,8 @@ void Locale::resolveUnicodeExtension(const char* buf, size_t length) {
     if (pos != buf + length) {
         pos += strlen(kPrefix);
         const size_t remainingLength = length - (pos - buf);
-        mLBStyle = resolveLineBreakStyle(pos, remainingLength);
         mEmojiStyle = resolveEmojiStyle(pos, remainingLength);
     }
-}
-
-// static
-// Lookup line break subtag and determine the line break style.
-LineBreakStyle Locale::resolveLineBreakStyle(const char* buf, size_t length) {
-    // 8 is the length of "-u-lb-loose", which is the shortest line break subtag,
-    // unnecessary comparison can be avoided if total length is smaller than 11.
-    const size_t kMinSubtagLength = 8;
-    if (length >= kMinSubtagLength) {
-        static const char kPrefix[] = "lb-";
-        const char* pos = std::search(buf, buf + length, kPrefix, kPrefix + strlen(kPrefix));
-        if (pos != buf + length) {  // found
-            pos += strlen(kPrefix);
-            const size_t remainingLength = length - (pos - buf);
-            if (isSubtag(pos, remainingLength, "loose", 5)) {
-                return LineBreakStyle::LOOSE;
-            } else if (isSubtag(pos, remainingLength, "normal", 6)) {
-                return LineBreakStyle::NORMAL;
-            } else if (isSubtag(pos, remainingLength, "strict", 6)) {
-                return LineBreakStyle::STRICT;
-            }
-        }
-    }
-    return LineBreakStyle::EMPTY;
 }
 
 // static
@@ -339,7 +314,55 @@ uint8_t Locale::scriptToSubScriptBits(uint32_t script) {
 }
 
 std::string Locale::getString() const {
-    char buf[32] = {};
+    char buf[32];
+    int i = buildLocaleString(buf);
+    return std::string(buf, i);
+}
+
+std::string Locale::getStringWithLineBreakOption(LineBreakStyle lbStyle) const {
+    char buf[32];
+    int i = buildLocaleString(buf);
+
+    // Add line break unicode extension.
+    if (lbStyle != LineBreakStyle::None) {
+        buf[i++] = '-';
+        buf[i++] = 'u';
+        buf[i++] = '-';
+        buf[i++] = 'l';
+        buf[i++] = 'b';
+        buf[i++] = '-';
+        switch (lbStyle) {
+            case LineBreakStyle::Loose:
+                buf[i++] = 'l';
+                buf[i++] = 'o';
+                buf[i++] = 'o';
+                buf[i++] = 's';
+                buf[i++] = 'e';
+                break;
+            case LineBreakStyle::Normal:
+                buf[i++] = 'n';
+                buf[i++] = 'o';
+                buf[i++] = 'r';
+                buf[i++] = 'm';
+                buf[i++] = 'a';
+                buf[i++] = 'l';
+                break;
+            case LineBreakStyle::Strict:
+                buf[i++] = 's';
+                buf[i++] = 't';
+                buf[i++] = 'r';
+                buf[i++] = 'i';
+                buf[i++] = 'c';
+                buf[i++] = 't';
+                break;
+            default:
+                MINIKIN_ASSERT(false, "Must not reached.");
+        }
+    }
+    return std::string(buf, i);
+}
+
+int Locale::buildLocaleString(char* buf) const {
     size_t i;
     if (mLanguage == NO_LANGUAGE) {
         buf[0] = 'u';
@@ -378,43 +401,7 @@ std::string Locale::getString() const {
                 MINIKIN_ASSERT(false, "Must not reached.");
         }
     }
-    // Add line break unicode extension.
-    if (mLBStyle != LineBreakStyle::EMPTY) {
-        buf[i++] = '-';
-        buf[i++] = 'u';
-        buf[i++] = '-';
-        buf[i++] = 'l';
-        buf[i++] = 'b';
-        buf[i++] = '-';
-        switch (mLBStyle) {
-            case LineBreakStyle::LOOSE:
-                buf[i++] = 'l';
-                buf[i++] = 'o';
-                buf[i++] = 'o';
-                buf[i++] = 's';
-                buf[i++] = 'e';
-                break;
-            case LineBreakStyle::NORMAL:
-                buf[i++] = 'n';
-                buf[i++] = 'o';
-                buf[i++] = 'r';
-                buf[i++] = 'm';
-                buf[i++] = 'a';
-                buf[i++] = 'l';
-                break;
-            case LineBreakStyle::STRICT:
-                buf[i++] = 's';
-                buf[i++] = 't';
-                buf[i++] = 'r';
-                buf[i++] = 'i';
-                buf[i++] = 'c';
-                buf[i++] = 't';
-                break;
-            default:
-                MINIKIN_ASSERT(false, "Must not reached.");
-        }
-    }
-    return std::string(buf, i);
+    return i;
 }
 
 Locale Locale::getPartialLocale(SubtagBits bits) const {

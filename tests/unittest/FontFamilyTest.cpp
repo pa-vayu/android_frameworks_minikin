@@ -109,12 +109,12 @@ TEST(LocaleTest, getStringTest) {
     EXPECT_EQ("de-Latn-DE-1901", createLocale("de-1901").getString());
     EXPECT_EQ("de-Latn-DE-1996", createLocale("de-DE-1996").getString());
 
-    // Line Break subtag
-    EXPECT_EQ("ja-Jpan-JP-u-lb-loose", createLocale("ja-JP-u-lb-loose").getString());
-    EXPECT_EQ("ja-Jpan-JP-u-lb-normal", createLocale("ja-JP-u-lb-normal").getString());
-    EXPECT_EQ("ja-Jpan-JP-u-lb-strict", createLocale("ja-JP-u-lb-strict").getString());
-    EXPECT_EQ("ja-Jpan-JP-u-lb-loose", createLocale("ja-JP-u-lb-loose-em-emoji").getString());
-    EXPECT_EQ("ja-Jpan-JP-u-lb-strict", createLocale("ja-JP-u-em-default-lb-strict").getString());
+    // Line Break subtag is dropped from getString().
+    EXPECT_EQ("ja-Jpan-JP", createLocale("ja-JP-u-lb-loose").getString());
+    EXPECT_EQ("ja-Jpan-JP", createLocale("ja-JP-u-lb-normal").getString());
+    EXPECT_EQ("ja-Jpan-JP", createLocale("ja-JP-u-lb-strict").getString());
+    EXPECT_EQ("ja-Jpan-JP", createLocale("ja-JP-u-lb-loose-em-emoji").getString());
+    EXPECT_EQ("ja-Jpan-JP", createLocale("ja-JP-u-em-default-lb-strict").getString());
     EXPECT_EQ("ja-Jpan-JP", createLocale("ja-JP-u-lb-bogus").getString());
 
     // Emoji subtag is dropped from getString().
@@ -123,6 +123,16 @@ TEST(LocaleTest, getStringTest) {
 
     // This is not a necessary desired behavior, just known behavior.
     EXPECT_EQ("en-Latn-US", createLocale("und-Abcdefgh").getString());
+}
+
+TEST(LocaleTest, getStringWithLineBreakOptionTest) {
+    EXPECT_EQ("en-Latn-US", createLocale("en").getStringWithLineBreakOption(LineBreakStyle::None));
+    EXPECT_EQ("en-Latn-US-u-lb-loose",
+              createLocale("en").getStringWithLineBreakOption(LineBreakStyle::Loose));
+    EXPECT_EQ("en-Latn-US-u-lb-normal",
+              createLocale("en").getStringWithLineBreakOption(LineBreakStyle::Normal));
+    EXPECT_EQ("en-Latn-US-u-lb-strict",
+              createLocale("en").getStringWithLineBreakOption(LineBreakStyle::Strict));
 }
 
 TEST(LocaleTest, invalidLanguageTagTest) {  // just make sure no crash happens
