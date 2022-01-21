@@ -91,6 +91,8 @@ public:
                               const LayoutPieces&, const MinikinPaint&, uint32_t, StartHyphenEdit,
                               EndHyphenEdit, Layout*) const {}
 
+    virtual float measureText(const U16StringPiece&) const { return 0; }
+
 private:
     MinikinPaint mPaint;
     uint32_t mLocaleListId;

@@ -59,6 +59,8 @@ public:
                               StartHyphenEdit startHyphen, EndHyphenEdit endHyphen,
                               Layout* outLayout) const = 0;
 
+    virtual float measureText(const U16StringPiece& text) const = 0;
+
     // Following two methods are only called when the implementation returns true for
     // canBreak method.
 
@@ -109,6 +111,7 @@ public:
     float measureHyphenPiece(const U16StringPiece& text, const Range& range,
                              StartHyphenEdit startHyphen, EndHyphenEdit endHyphen,
                              LayoutPieces* pieces) const override;
+    float measureText(const U16StringPiece& text) const;
 
 private:
     MinikinPaint mPaint;
@@ -147,6 +150,8 @@ public:
                       const MinikinPaint& /* paint */, uint32_t /* outOrigin */,
                       StartHyphenEdit /* startHyphen */, EndHyphenEdit /* endHyphen */,
                       Layout* /* outLayout*/) const override {}
+
+    float measureText(const U16StringPiece&) const { return 0; }
 
 private:
     const float mWidth;
@@ -206,13 +211,14 @@ private:
     friend class MeasuredTextBuilder;
 
     void measure(const U16StringPiece& textBuf, bool computeHyphenation, bool computeLayout,
-                 MeasuredText* hint);
+                 bool ignoreHyphenKerning, MeasuredText* hint);
 
     // Use MeasuredTextBuilder instead.
     MeasuredText(const U16StringPiece& textBuf, std::vector<std::unique_ptr<Run>>&& runs,
-                 bool computeHyphenation, bool computeLayout, MeasuredText* hint)
+                 bool computeHyphenation, bool computeLayout, bool ignoreHyphenKerning,
+                 MeasuredText* hint)
             : widths(textBuf.size()), runs(std::move(runs)) {
-        measure(textBuf, computeHyphenation, computeLayout, hint);
+        measure(textBuf, computeHyphenation, computeLayout, ignoreHyphenKerning, hint);
     }
 };
 
@@ -235,10 +241,12 @@ public:
     }
 
     std::unique_ptr<MeasuredText> build(const U16StringPiece& textBuf, bool computeHyphenation,
-                                        bool computeLayout, MeasuredText* hint) {
+                                        bool computeLayout, bool ignoreHyphenKerning,
+                                        MeasuredText* hint) {
         // Unable to use make_unique here since make_unique is not a friend of MeasuredText.
-        return std::unique_ptr<MeasuredText>(new MeasuredText(
-                textBuf, std::move(mRuns), computeHyphenation, computeLayout, hint));
+        return std::unique_ptr<MeasuredText>(new MeasuredText(textBuf, std::move(mRuns),
+                                                              computeHyphenation, computeLayout,
+                                                              ignoreHyphenKerning, hint));
     }
 
     MINIKIN_PREVENT_COPY_ASSIGN_AND_MOVE(MeasuredTextBuilder);

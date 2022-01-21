@@ -216,9 +216,7 @@ static inline hb_codepoint_t determineHyphenChar(hb_codepoint_t preferredHyphen,
 template <typename HyphenEdit>
 static inline void addHyphenToHbBuffer(const HbBufferUniquePtr& buffer, const HbFontUniquePtr& font,
                                        HyphenEdit hyphen, uint32_t cluster) {
-    const uint32_t* chars;
-    size_t size;
-    std::tie(chars, size) = getHyphenString(hyphen);
+    auto [chars, size] = getHyphenString(hyphen);
     for (size_t i = 0; i < size; i++) {
         hb_buffer_add(buffer.get(), determineHyphenChar(chars[i], font.get()), cluster);
     }
