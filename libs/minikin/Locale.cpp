@@ -319,14 +319,18 @@ std::string Locale::getString() const {
     return std::string(buf, i);
 }
 
-std::string Locale::getStringWithLineBreakOption(LineBreakStyle lbStyle) const {
-    char buf[32];
+std::string Locale::getStringWithLineBreakOption(LineBreakStyle lbStyle,
+                                                 LineBreakWordStyle lbWordStyle) const {
+    char buf[48];
     int i = buildLocaleString(buf);
 
     // Add line break unicode extension.
-    if (lbStyle != LineBreakStyle::None) {
+    if (lbStyle != LineBreakStyle::None || lbWordStyle != LineBreakWordStyle::None) {
         buf[i++] = '-';
         buf[i++] = 'u';
+    }
+
+    if (lbStyle != LineBreakStyle::None) {
         buf[i++] = '-';
         buf[i++] = 'l';
         buf[i++] = 'b';
@@ -354,6 +358,25 @@ std::string Locale::getStringWithLineBreakOption(LineBreakStyle lbStyle) const {
                 buf[i++] = 'i';
                 buf[i++] = 'c';
                 buf[i++] = 't';
+                break;
+            default:
+                MINIKIN_ASSERT(false, "Must not reached.");
+        }
+    }
+
+    if (lbWordStyle != LineBreakWordStyle::None) {
+        buf[i++] = '-';
+        buf[i++] = 'l';
+        buf[i++] = 'w';
+        buf[i++] = '-';
+        switch (lbWordStyle) {
+            case LineBreakWordStyle::Phrase:
+                buf[i++] = 'p';
+                buf[i++] = 'h';
+                buf[i++] = 'r';
+                buf[i++] = 'a';
+                buf[i++] = 's';
+                buf[i++] = 'e';
                 break;
             default:
                 MINIKIN_ASSERT(false, "Must not reached.");
