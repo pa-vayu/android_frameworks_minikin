@@ -79,7 +79,8 @@ protected:
         MinikinPaint paint(fc);
         paint.size = 10.0f;  // Make 1em=10px
         paint.localeListId = LocaleListCache::getId(lang);
-        builder.addStyleRun(0, textBuffer.size(), std::move(paint), false);
+        builder.addStyleRun(0, textBuffer.size(), std::move(paint), (int)LineBreakStyle::None,
+                            false);
         std::unique_ptr<MeasuredText> measuredText = builder.build(
                 textBuffer, false /* compute hyphenation */, false /* compute full layout */,
                 false /* ignore kerning */, nullptr /* no hint */);
@@ -108,7 +109,7 @@ TEST_F(GreedyLineBreakerTest, roundingError) {
     float measured = Layout::measureText(textBuffer, Range(0, textBuffer.size()), Bidi::LTR, paint,
                                          StartHyphenEdit::NO_EDIT, EndHyphenEdit::NO_EDIT, nullptr);
 
-    builder.addStyleRun(0, textBuffer.size(), std::move(paint), false);
+    builder.addStyleRun(0, textBuffer.size(), std::move(paint), (int)LineBreakStyle::None, false);
     std::unique_ptr<MeasuredText> measuredText = builder.build(
             textBuffer, false /* compute hyphenation */, false /* compute full layout */,
             false /* ignore kerning */, nullptr /* no hint */);
