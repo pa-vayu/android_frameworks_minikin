@@ -28,6 +28,13 @@ enum class LineBreakStyle : uint8_t {
     Strict = 3,
 };
 
+// The line break word style(lw) of the strings.
+// See the key "lw" in https://www.unicode.org/reports/tr35/#Key_Type_Definitions
+enum class LineBreakWordStyle : uint8_t {
+    None = 0,
+    Phrase = 1,
+};
+
 }  // namespace minikin
 
 #endif  // MINIKIN_LINE_BREAK_STYLE_H

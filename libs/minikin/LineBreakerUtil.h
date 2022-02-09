@@ -180,6 +180,7 @@ struct CharProcessor {
         if (localeListId != newLocaleListId) {
             Locale locale = getEffectiveLocale(newLocaleListId);
             nextWordBreak = breaker.followingWithLocale(locale, run.lineBreakStyle(),
+                                                        run.lineBreakWordStyle(),
                                                         run.getRange().getStart());
             hyphenator = HyphenatorMap::lookup(locale);
             localeListId = newLocaleListId;

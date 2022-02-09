@@ -45,6 +45,9 @@ public:
     // Return the line break style(lb) for this run.
     virtual LineBreakStyle lineBreakStyle() const = 0;
 
+    // Return the line break word style(lw) for this run.
+    virtual LineBreakWordStyle lineBreakWordStyle() const = 0;
+
     // Returns the locale list ID for this run.
     virtual uint32_t getLocaleListId() const = 0;
 
@@ -89,15 +92,20 @@ protected:
 
 class StyleRun : public Run {
 public:
-    StyleRun(const Range& range, MinikinPaint&& paint, int lineBreakStyle, bool isRtl)
+    StyleRun(const Range& range, MinikinPaint&& paint, int lineBreakStyle, int lineBreakWordStyle,
+             bool isRtl)
             : Run(range),
               mPaint(std::move(paint)),
               mLineBreakStyle(lineBreakStyle),
+              mLineBreakWordStyle(lineBreakWordStyle),
               mIsRtl(isRtl) {}
 
     bool canBreak() const override { return true; }
     LineBreakStyle lineBreakStyle() const override {
         return static_cast<LineBreakStyle>(mLineBreakStyle);
+    }
+    LineBreakWordStyle lineBreakWordStyle() const override {
+        return static_cast<LineBreakWordStyle>(mLineBreakWordStyle);
     }
     uint32_t getLocaleListId() const override { return mPaint.localeListId; }
     bool isRtl() const override { return mIsRtl; }
@@ -126,6 +134,7 @@ public:
 private:
     MinikinPaint mPaint;
     int mLineBreakStyle;
+    int mLineBreakWordStyle;
     const bool mIsRtl;
 };
 
@@ -137,6 +146,7 @@ public:
     bool isRtl() const { return false; }
     bool canBreak() const { return false; }
     LineBreakStyle lineBreakStyle() const override { return LineBreakStyle::None; }
+    LineBreakWordStyle lineBreakWordStyle() const override { return LineBreakWordStyle::None; }
     uint32_t getLocaleListId() const { return mLocaleListId; }
 
     void getMetrics(const U16StringPiece& /* text */, std::vector<float>* advances,
@@ -239,9 +249,9 @@ public:
     MeasuredTextBuilder() {}
 
     void addStyleRun(int32_t start, int32_t end, MinikinPaint&& paint, int lineBreakStyle,
-                     bool isRtl) {
+                     int lineBreakWordStyle, bool isRtl) {
         mRuns.emplace_back(std::make_unique<StyleRun>(Range(start, end), std::move(paint),
-                                                      lineBreakStyle, isRtl));
+                                                      lineBreakStyle, lineBreakWordStyle, isRtl));
     }
 
     void addReplacementRun(int32_t start, int32_t end, float width, uint32_t localeListId) {
