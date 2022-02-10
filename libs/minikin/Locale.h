@@ -126,7 +126,8 @@ public:
 
     std::string getString() const;
 
-    std::string getStringWithLineBreakOption(LineBreakStyle lbStyle) const;
+    std::string getStringWithLineBreakOption(LineBreakStyle lbStyle,
+                                             LineBreakWordStyle lbWordStyle) const;
 
     // Calculates a matching score. This score represents how well the input locales cover this
     // locale. The maximum score in the locale list is returned.

@@ -38,8 +38,8 @@ TEST(WordBreakerTest, basic) {
     breaker.setText(buf, NELEM(buf));
     EXPECT_EQ(0, breaker.current());
     EXPECT_EQ(6, breaker.followingWithLocale(Locale("en-US"), LineBreakStyle::None,
-                                             0));                   // after "hello "
-    EXPECT_EQ(0, breaker.wordStart());                              // "hello"
+                                             LineBreakWordStyle::None, 0));  // after "hello "
+    EXPECT_EQ(0, breaker.wordStart());                                       // "hello"
     EXPECT_EQ(5, breaker.wordEnd());
     EXPECT_EQ(0, breaker.breakBadness());
     EXPECT_EQ(6, breaker.current());
@@ -52,11 +52,13 @@ TEST(WordBreakerTest, basic) {
 
 TEST(WordBreakerTest, softHyphen) {
     uint16_t buf[] = {'h', 'e', 'l', 0x00AD, 'l', 'o', ' ', 'w', 'o', 'r', 'l', 'd'};
+    auto lbStyle = LineBreakStyle::None;
+    auto lbWordStyle = LineBreakWordStyle::None;
     WordBreaker breaker;
     breaker.setText(buf, NELEM(buf));
     EXPECT_EQ(0, breaker.current());
     // after "hel{SOFT HYPHEN}lo "
-    EXPECT_EQ(7, breaker.followingWithLocale(Locale("en-US"), LineBreakStyle::None, 0));
+    EXPECT_EQ(7, breaker.followingWithLocale(Locale("en-US"), lbStyle, lbWordStyle, 0));
     EXPECT_EQ(0, breaker.wordStart());  // "hel{SOFT HYPHEN}lo"
     EXPECT_EQ(6, breaker.wordEnd());
     EXPECT_EQ(0, breaker.breakBadness());
@@ -69,11 +71,13 @@ TEST(WordBreakerTest, softHyphen) {
 TEST(WordBreakerTest, hardHyphen) {
     // Hyphens should not allow breaks anymore.
     uint16_t buf[] = {'s', 'u', 'g', 'a', 'r', '-', 'f', 'r', 'e', 'e'};
+    auto lbStyle = LineBreakStyle::None;
+    auto lbWordStyle = LineBreakWordStyle::None;
     WordBreaker breaker;
     breaker.setText(buf, NELEM(buf));
     EXPECT_EQ(0, breaker.current());
     EXPECT_EQ((ssize_t)NELEM(buf),
-              breaker.followingWithLocale(Locale("en-US"), LineBreakStyle::None, 0));
+              breaker.followingWithLocale(Locale("en-US"), lbStyle, lbWordStyle, 0));
     EXPECT_EQ(0, breaker.wordStart());
     EXPECT_EQ((ssize_t)NELEM(buf), breaker.wordEnd());
     EXPECT_EQ(0, breaker.breakBadness());
@@ -81,13 +85,15 @@ TEST(WordBreakerTest, hardHyphen) {
 
 TEST(WordBreakerTest, postfixAndPrefix) {
     uint16_t buf[] = {'U', 'S', 0x00A2, ' ', 'J', 'P', 0x00A5};  // US¢ JP¥
+    auto lbStyle = LineBreakStyle::None;
+    auto lbWordStyle = LineBreakWordStyle::None;
     WordBreaker breaker;
     breaker.setText(buf, NELEM(buf));
     EXPECT_EQ(0, breaker.current());
 
-    EXPECT_EQ(4, breaker.followingWithLocale(Locale("en-US"), LineBreakStyle::None,
-                                             0));                   // after CENT SIGN
-    EXPECT_EQ(0, breaker.wordStart());                              // "US¢"
+    EXPECT_EQ(4, breaker.followingWithLocale(Locale("en-US"), lbStyle, lbWordStyle,
+                                             0));  // after CENT SIGN
+    EXPECT_EQ(0, breaker.wordStart());             // "US¢"
     EXPECT_EQ(3, breaker.wordEnd());
 
     EXPECT_EQ((ssize_t)NELEM(buf), breaker.next());  // end of string
@@ -97,13 +103,15 @@ TEST(WordBreakerTest, postfixAndPrefix) {
 
 TEST(WordBreakerTest, myanmarKinzi) {
     uint16_t buf[] = {0x1004, 0x103A, 0x1039, 0x1000, 0x102C};  // NGA, ASAT, VIRAMA, KA, UU
+    auto lbStyle = LineBreakStyle::None;
+    auto lbWordStyle = LineBreakWordStyle::None;
     WordBreaker breaker;
     breaker.setText(buf, NELEM(buf));
     EXPECT_EQ(0, breaker.current());
 
     // end of string
     EXPECT_EQ((ssize_t)NELEM(buf),
-              breaker.followingWithLocale(Locale("en-US"), LineBreakStyle::None, 0));
+              breaker.followingWithLocale(Locale("en-US"), lbStyle, lbWordStyle, 0));
     EXPECT_EQ(0, breaker.wordStart());
     EXPECT_EQ((ssize_t)NELEM(buf), breaker.wordEnd());
 }
@@ -119,11 +127,13 @@ TEST(WordBreakerTest, zwjEmojiSequences) {
             // CAT FACE + zwj + BUST IN SILHOUETTE
             UTF16(0x1F431), 0x200D, UTF16(0x1F464),
     };
+    auto lbStyle = LineBreakStyle::None;
+    auto lbWordStyle = LineBreakWordStyle::None;
     WordBreaker breaker;
     breaker.setText(buf, NELEM(buf));
     EXPECT_EQ(0, breaker.current());
     // after man + zwj + heart + zwj + man
-    EXPECT_EQ(7, breaker.followingWithLocale(Locale("en-US"), LineBreakStyle::None, 0));
+    EXPECT_EQ(7, breaker.followingWithLocale(Locale("en-US"), lbStyle, lbWordStyle, 0));
     EXPECT_EQ(0, breaker.wordStart());
     EXPECT_EQ(7, breaker.wordEnd());
     EXPECT_EQ(17, breaker.next());  // after woman + zwj + heart + zwj + woman
@@ -143,11 +153,13 @@ TEST(WordBreakerTest, emojiWithModifier) {
             0x270C, 0xFE0F,
             UTF16(0x1F3FF)  // victory hand + emoji style + type 6 fitzpatrick modifier
     };
+    auto lbStyle = LineBreakStyle::None;
+    auto lbWordStyle = LineBreakWordStyle::None;
     WordBreaker breaker;
     breaker.setText(buf, NELEM(buf));
     EXPECT_EQ(0, breaker.current());
     // after boy + type 1-2 fitzpatrick modifier
-    EXPECT_EQ(4, breaker.followingWithLocale(Locale("en-US"), LineBreakStyle::None, 0));
+    EXPECT_EQ(4, breaker.followingWithLocale(Locale("en-US"), lbStyle, lbWordStyle, 0));
     EXPECT_EQ(0, breaker.wordStart());
     EXPECT_EQ(4, breaker.wordEnd());
     EXPECT_EQ((ssize_t)NELEM(buf), breaker.next());  // end
@@ -167,10 +179,12 @@ TEST(WordBreakerTest, unicode10Emoji) {
             // WHITE SMILING FACE + VS16 + SLED
             0x263A, 0xFE0F, UTF16(0x1F6F7),
     };
+    auto lbStyle = LineBreakStyle::None;
+    auto lbWordStyle = LineBreakWordStyle::None;
     WordBreaker breaker;
     breaker.setText(buf, NELEM(buf));
     EXPECT_EQ(0, breaker.current());
-    EXPECT_EQ(2, breaker.followingWithLocale(Locale("en"), LineBreakStyle::None, 0));
+    EXPECT_EQ(2, breaker.followingWithLocale(Locale("en"), lbStyle, lbWordStyle, 0));
     EXPECT_EQ(0, breaker.wordStart());
     EXPECT_EQ(2, breaker.wordEnd());
 
@@ -213,12 +227,14 @@ TEST(WordBreakerTest, flagsSequenceSingleFlag) {
     uint16_t buf[BUF_SIZE];
     size_t size;
     ParseUnicode(buf, BUF_SIZE, flags.c_str(), &size, nullptr);
+    auto lbStyle = LineBreakStyle::None;
+    auto lbWordStyle = LineBreakWordStyle::None;
 
     WordBreaker breaker;
     breaker.setText(buf, size);
     EXPECT_EQ(0, breaker.current());
     // end of the first flag
-    EXPECT_EQ(kFlagLength, breaker.followingWithLocale(Locale("en-US"), LineBreakStyle::None, 0));
+    EXPECT_EQ(kFlagLength, breaker.followingWithLocale(Locale("en-US"), lbStyle, lbWordStyle, 0));
     EXPECT_EQ(0, breaker.wordStart());
     EXPECT_EQ(kFlagLength, breaker.wordEnd());
     EXPECT_EQ(static_cast<ssize_t>(size), breaker.next());
@@ -238,12 +254,14 @@ TEST(WordBreakerTest, flagsSequence) {
     uint16_t buf[BUF_SIZE];
     size_t size;
     ParseUnicode(buf, BUF_SIZE, flagSequence.c_str(), &size, nullptr);
+    auto lbStyle = LineBreakStyle::None;
+    auto lbWordStyle = LineBreakWordStyle::None;
 
     WordBreaker breaker;
     breaker.setText(buf, size);
     EXPECT_EQ(0, breaker.current());
     // end of the first flag sequence
-    EXPECT_EQ(kFlagLength, breaker.followingWithLocale(Locale("en-US"), LineBreakStyle::None, 0));
+    EXPECT_EQ(kFlagLength, breaker.followingWithLocale(Locale("en-US"), lbStyle, lbWordStyle, 0));
     EXPECT_EQ(0, breaker.wordStart());
     EXPECT_EQ(kFlagLength, breaker.wordEnd());
     EXPECT_EQ(static_cast<ssize_t>(size), breaker.next());
@@ -254,12 +272,14 @@ TEST(WordBreakerTest, flagsSequence) {
 TEST(WordBreakerTest, punct) {
     uint16_t buf[] = {0x00A1, 0x00A1, 'h', 'e', 'l', 'l', 'o', ',',
                       ' ',    'w',    'o', 'r', 'l', 'd', '!', '!'};
+    auto lbStyle = LineBreakStyle::None;
+    auto lbWordStyle = LineBreakWordStyle::None;
     WordBreaker breaker;
     breaker.setText(buf, NELEM(buf));
     EXPECT_EQ(0, breaker.current());
-    EXPECT_EQ(9, breaker.followingWithLocale(Locale("en-US"), LineBreakStyle::None,
-                                             0));                   // after "¡¡hello, "
-    EXPECT_EQ(2, breaker.wordStart());                              // "hello"
+    EXPECT_EQ(9, breaker.followingWithLocale(Locale("en-US"), lbStyle, lbWordStyle,
+                                             0));  // after "¡¡hello, "
+    EXPECT_EQ(2, breaker.wordStart());             // "hello"
     EXPECT_EQ(7, breaker.wordEnd());
     EXPECT_EQ(0, breaker.breakBadness());
     EXPECT_EQ((ssize_t)NELEM(buf), breaker.next());  // end
@@ -271,10 +291,12 @@ TEST(WordBreakerTest, punct) {
 TEST(WordBreakerTest, email) {
     uint16_t buf[] = {'f', 'o', 'o', '@', 'e', 'x', 'a', 'm', 'p',
                       'l', 'e', '.', 'c', 'o', 'm', ' ', 'x'};
+    auto lbStyle = LineBreakStyle::None;
+    auto lbWordStyle = LineBreakWordStyle::None;
     WordBreaker breaker;
     breaker.setText(buf, NELEM(buf));
     EXPECT_EQ(0, breaker.current());
-    EXPECT_EQ(11, breaker.followingWithLocale(Locale("en-US"), LineBreakStyle::None,
+    EXPECT_EQ(11, breaker.followingWithLocale(Locale("en-US"), lbStyle, lbWordStyle,
                                               0));  // after "foo@example"
     EXPECT_TRUE(breaker.wordStart() >= breaker.wordEnd());
     EXPECT_EQ(1, breaker.breakBadness());
@@ -290,10 +312,12 @@ TEST(WordBreakerTest, email) {
 TEST(WordBreakerTest, mailto) {
     uint16_t buf[] = {'m', 'a', 'i', 'l', 't', 'o', ':', 'f', 'o', 'o', '@', 'e',
                       'x', 'a', 'm', 'p', 'l', 'e', '.', 'c', 'o', 'm', ' ', 'x'};
+    auto lbStyle = LineBreakStyle::None;
+    auto lbWordStyle = LineBreakWordStyle::None;
     WordBreaker breaker;
     breaker.setText(buf, NELEM(buf));
     EXPECT_EQ(0, breaker.current());
-    EXPECT_EQ(7, breaker.followingWithLocale(Locale("en-US"), LineBreakStyle::None,
+    EXPECT_EQ(7, breaker.followingWithLocale(Locale("en-US"), lbStyle, lbWordStyle,
                                              0));  // after "mailto:"
     EXPECT_TRUE(breaker.wordStart() >= breaker.wordEnd());
     EXPECT_EQ(1, breaker.breakBadness());
@@ -314,10 +338,12 @@ TEST(WordBreakerTest, mailto) {
 TEST(WordBreakerTest, emailNonAscii) {
     uint16_t buf[] = {'f', 'o', 'o', '@', 'e', 'x', 'a', 'm',
                       'p', 'l', 'e', '.', 'c', 'o', 'm', 0x4E00};
+    auto lbStyle = LineBreakStyle::None;
+    auto lbWordStyle = LineBreakWordStyle::None;
     WordBreaker breaker;
     breaker.setText(buf, NELEM(buf));
     EXPECT_EQ(0, breaker.current());
-    EXPECT_EQ(11, breaker.followingWithLocale(Locale("en-US"), LineBreakStyle::None,
+    EXPECT_EQ(11, breaker.followingWithLocale(Locale("en-US"), lbStyle, lbWordStyle,
                                               0));  // after "foo@example"
     EXPECT_TRUE(breaker.wordStart() >= breaker.wordEnd());
     EXPECT_EQ(1, breaker.breakBadness());
@@ -333,10 +359,12 @@ TEST(WordBreakerTest, emailNonAscii) {
 TEST(WordBreakerTest, emailCombining) {
     uint16_t buf[] = {'f', 'o', 'o', '@', 'e', 'x', 'a',    'm', 'p',
                       'l', 'e', '.', 'c', 'o', 'm', 0x0303, ' ', 'x'};
+    auto lbStyle = LineBreakStyle::None;
+    auto lbWordStyle = LineBreakWordStyle::None;
     WordBreaker breaker;
     breaker.setText(buf, NELEM(buf));
     EXPECT_EQ(0, breaker.current());
-    EXPECT_EQ(11, breaker.followingWithLocale(Locale("en-US"), LineBreakStyle::None,
+    EXPECT_EQ(11, breaker.followingWithLocale(Locale("en-US"), lbStyle, lbWordStyle,
                                               0));  // after "foo@example"
     EXPECT_TRUE(breaker.wordStart() >= breaker.wordEnd());
     EXPECT_EQ(1, breaker.breakBadness());
@@ -351,11 +379,13 @@ TEST(WordBreakerTest, emailCombining) {
 
 TEST(WordBreakerTest, lonelyAt) {
     uint16_t buf[] = {'a', ' ', '@', ' ', 'b'};
+    auto lbStyle = LineBreakStyle::None;
+    auto lbWordStyle = LineBreakWordStyle::None;
     WordBreaker breaker;
     breaker.setText(buf, NELEM(buf));
     EXPECT_EQ(0, breaker.current());
     EXPECT_EQ(2,
-              breaker.followingWithLocale(Locale("en-US"), LineBreakStyle::None, 0));  // after "a "
+              breaker.followingWithLocale(Locale("en-US"), lbStyle, lbWordStyle, 0));  // after "a "
     EXPECT_EQ(0, breaker.wordStart());                              // "a"
     EXPECT_EQ(1, breaker.wordEnd());
     EXPECT_EQ(0, breaker.breakBadness());
@@ -371,10 +401,12 @@ TEST(WordBreakerTest, lonelyAt) {
 TEST(WordBreakerTest, url) {
     uint16_t buf[] = {'h', 't', 't', 'p', ':', '/', '/', 'e', 'x', 'a',
                       'm', 'p', 'l', 'e', '.', 'c', 'o', 'm', ' ', 'x'};
+    auto lbStyle = LineBreakStyle::None;
+    auto lbWordStyle = LineBreakWordStyle::None;
     WordBreaker breaker;
     breaker.setText(buf, NELEM(buf));
     EXPECT_EQ(0, breaker.current());
-    EXPECT_EQ(5, breaker.followingWithLocale(Locale("en-US"), LineBreakStyle::None,
+    EXPECT_EQ(5, breaker.followingWithLocale(Locale("en-US"), lbStyle, lbWordStyle,
                                              0));  // after "http:"
     EXPECT_TRUE(breaker.wordStart() >= breaker.wordEnd());
     EXPECT_EQ(1, breaker.breakBadness());
@@ -398,10 +430,12 @@ TEST(WordBreakerTest, urlBreakChars) {
     uint16_t buf[] = {'h', 't', 't', 'p', ':', '/', '/', 'a', '.', 'b', '/',
                       '~', 'c', ',', 'd', '-', 'e', '?', 'f', '=', 'g', '&',
                       'h', '#', 'i', '%', 'j', '_', 'k', '/', 'l'};
+    auto lbStyle = LineBreakStyle::None;
+    auto lbWordStyle = LineBreakWordStyle::None;
     WordBreaker breaker;
     breaker.setText(buf, NELEM(buf));
     EXPECT_EQ(0, breaker.current());
-    EXPECT_EQ(5, breaker.followingWithLocale(Locale("en-US"), LineBreakStyle::None,
+    EXPECT_EQ(5, breaker.followingWithLocale(Locale("en-US"), lbStyle, lbWordStyle,
                                              0));  // after "http:"
     EXPECT_TRUE(breaker.wordStart() >= breaker.wordEnd());
     EXPECT_EQ(1, breaker.breakBadness());
@@ -457,10 +491,12 @@ TEST(WordBreakerTest, urlBreakChars) {
 
 TEST(WordBreakerTest, urlNoHyphenBreak) {
     uint16_t buf[] = {'h', 't', 't', 'p', ':', '/', '/', 'a', '-', '/', 'b'};
+    auto lbStyle = LineBreakStyle::None;
+    auto lbWordStyle = LineBreakWordStyle::None;
     WordBreaker breaker;
     breaker.setText(buf, NELEM(buf));
     EXPECT_EQ(0, breaker.current());
-    EXPECT_EQ(5, breaker.followingWithLocale(Locale("en-US"), LineBreakStyle::None,
+    EXPECT_EQ(5, breaker.followingWithLocale(Locale("en-US"), lbStyle, lbWordStyle,
                                              0));  // after "http:"
     EXPECT_TRUE(breaker.wordStart() >= breaker.wordEnd());
     EXPECT_EQ(7, breaker.next());  // after "//"
@@ -473,10 +509,12 @@ TEST(WordBreakerTest, urlNoHyphenBreak) {
 
 TEST(WordBreakerTest, urlEndsWithSlash) {
     uint16_t buf[] = {'h', 't', 't', 'p', ':', '/', '/', 'a', '/'};
+    auto lbStyle = LineBreakStyle::None;
+    auto lbWordStyle = LineBreakWordStyle::None;
     WordBreaker breaker;
     breaker.setText(buf, NELEM(buf));
     EXPECT_EQ(0, breaker.current());
-    EXPECT_EQ(5, breaker.followingWithLocale(Locale("en-US"), LineBreakStyle::None,
+    EXPECT_EQ(5, breaker.followingWithLocale(Locale("en-US"), lbStyle, lbWordStyle,
                                              0));  // after "http:"
     EXPECT_TRUE(breaker.wordStart() >= breaker.wordEnd());
     EXPECT_EQ(7, breaker.next());  // after "//"
@@ -489,20 +527,24 @@ TEST(WordBreakerTest, urlEndsWithSlash) {
 
 TEST(WordBreakerTest, emailStartsWithSlash) {
     uint16_t buf[] = {'/', 'a', '@', 'b'};
+    auto lbStyle = LineBreakStyle::None;
+    auto lbWordStyle = LineBreakWordStyle::None;
     WordBreaker breaker;
     breaker.setText(buf, NELEM(buf));
     EXPECT_EQ(0, breaker.current());
     EXPECT_EQ((ssize_t)NELEM(buf),
-              breaker.followingWithLocale(Locale("en-US"), LineBreakStyle::None, 0));  // end
+              breaker.followingWithLocale(Locale("en-US"), lbStyle, lbWordStyle, 0));  // end
     EXPECT_TRUE(breaker.wordStart() >= breaker.wordEnd());
 }
 
 TEST(WordBreakerTest, setLocaleInsideUrl) {
     std::vector<uint16_t> buf = utf8ToUtf16("Hello http://abc/d.html World");
+    auto lbStyle = LineBreakStyle::None;
+    auto lbWordStyle = LineBreakWordStyle::None;
     WordBreaker breaker;
     breaker.setText(buf.data(), buf.size());
     EXPECT_EQ(0, breaker.current());
-    EXPECT_EQ(6, breaker.followingWithLocale(Locale("en-US"), LineBreakStyle::None,
+    EXPECT_EQ(6, breaker.followingWithLocale(Locale("en-US"), lbStyle, lbWordStyle,
                                              0));  // after "Hello "
     EXPECT_EQ(0, breaker.wordStart());
     EXPECT_EQ(5, breaker.wordEnd());
@@ -511,7 +553,7 @@ TEST(WordBreakerTest, setLocaleInsideUrl) {
     EXPECT_EQ(11, breaker.next());  // after "http:"
 
     // Restart from middle point of the URL. It should return the same previous break point.
-    EXPECT_EQ(11, breaker.followingWithLocale(Locale("en-US"), LineBreakStyle::None,
+    EXPECT_EQ(11, breaker.followingWithLocale(Locale("en-US"), lbStyle, lbWordStyle,
                                               6));  // after "http:"
     EXPECT_TRUE(breaker.wordStart() >= breaker.wordEnd());
 
@@ -519,7 +561,7 @@ TEST(WordBreakerTest, setLocaleInsideUrl) {
     EXPECT_TRUE(breaker.wordStart() >= breaker.wordEnd());
 
     // Restart from middle point of the URL. It should return the same previous break point.
-    EXPECT_EQ(13, breaker.followingWithLocale(Locale("en-US"), LineBreakStyle::None,
+    EXPECT_EQ(13, breaker.followingWithLocale(Locale("en-US"), lbStyle, lbWordStyle,
                                               12));  // after "//"
     EXPECT_TRUE(breaker.wordStart() >= breaker.wordEnd());
     EXPECT_EQ(16, breaker.next());  // after "abc"
@@ -543,6 +585,8 @@ TEST(WordBreakerTest, spaceAfterSpace) {
     };
 
     constexpr uint16_t CHAR_SPACE = 0x0020;
+    auto lbStyle = LineBreakStyle::None;
+    auto lbWordStyle = LineBreakWordStyle::None;
 
     for (uint16_t sp : SPACES) {
         char msg[64] = {};
@@ -554,7 +598,7 @@ TEST(WordBreakerTest, spaceAfterSpace) {
         breaker.setText(buf.data(), buf.size());
 
         EXPECT_EQ(0, breaker.current());
-        EXPECT_EQ(2, breaker.followingWithLocale(Locale("en-US"), LineBreakStyle::None,
+        EXPECT_EQ(2, breaker.followingWithLocale(Locale("en-US"), lbStyle, lbWordStyle,
                                                  0));  // after "a "
         EXPECT_EQ(0, breaker.wordStart());
         EXPECT_EQ(1, breaker.wordEnd());
@@ -586,26 +630,37 @@ TEST(WordBreakerTest, LineBreakerPool_acquire_without_release) {
     const Locale frFR("fr-Latn-FR");
 
     // All following three breakers must be the different instances.
-    ICULineBreakerPool::Slot enUSBreaker = pool.acquire(enUS, LineBreakStyle::Loose);
-    ICULineBreakerPool::Slot enUSBreaker2 = pool.acquire(enUS, LineBreakStyle::Loose);
-    ICULineBreakerPool::Slot enUSBreaker3 = pool.acquire(enUS, LineBreakStyle::Strict);
-    ICULineBreakerPool::Slot frFRBreaker = pool.acquire(frFR, LineBreakStyle::None);
+    ICULineBreakerPool::Slot enUSBreaker =
+            pool.acquire(enUS, LineBreakStyle::Loose, LineBreakWordStyle::None);
+    ICULineBreakerPool::Slot enUSBreaker2 =
+            pool.acquire(enUS, LineBreakStyle::Loose, LineBreakWordStyle::None);
+    ICULineBreakerPool::Slot enUSBreaker3 =
+            pool.acquire(enUS, LineBreakStyle::Strict, LineBreakWordStyle::None);
+    ICULineBreakerPool::Slot frFRBreaker =
+            pool.acquire(frFR, LineBreakStyle::None, LineBreakWordStyle::None);
+    ICULineBreakerPool::Slot frFRBreaker2 =
+            pool.acquire(frFR, LineBreakStyle::None, LineBreakWordStyle::Phrase);
 
     EXPECT_NE(nullptr, enUSBreaker.breaker.get());
     EXPECT_NE(nullptr, enUSBreaker2.breaker.get());
     EXPECT_NE(nullptr, enUSBreaker3.breaker.get());
     EXPECT_NE(nullptr, frFRBreaker.breaker.get());
+    EXPECT_NE(nullptr, frFRBreaker2.breaker.get());
 
     EXPECT_NE(enUSBreaker.breaker.get(), enUSBreaker2.breaker.get());
     EXPECT_NE(enUSBreaker.breaker.get(), enUSBreaker3.breaker.get());
     EXPECT_NE(enUSBreaker.breaker.get(), frFRBreaker.breaker.get());
     EXPECT_NE(enUSBreaker2.breaker.get(), frFRBreaker.breaker.get());
+    EXPECT_NE(enUSBreaker2.breaker.get(), frFRBreaker2.breaker.get());
     EXPECT_NE(enUSBreaker2.breaker.get(), enUSBreaker3.breaker.get());
 
     EXPECT_EQ(enUSBreaker.localeId, enUSBreaker2.localeId);
     EXPECT_EQ(enUSBreaker.localeId, enUSBreaker3.localeId);
     EXPECT_NE(enUSBreaker.localeId, frFRBreaker.localeId);
+    EXPECT_NE(enUSBreaker.localeId, frFRBreaker2.localeId);
     EXPECT_NE(enUSBreaker2.localeId, frFRBreaker.localeId);
+    EXPECT_NE(enUSBreaker2.localeId, frFRBreaker2.localeId);
+    EXPECT_EQ(frFRBreaker.localeId, frFRBreaker2.localeId);
 }
 
 TEST(WordBreakerTest, LineBreakerPool_acquire_with_release) {
@@ -615,7 +670,8 @@ TEST(WordBreakerTest, LineBreakerPool_acquire_with_release) {
     const Locale frFR("fr-Latn-FR");
 
     // All following three breakers must be the different instances.
-    ICULineBreakerPool::Slot enUSBreaker = pool.acquire(enUS, LineBreakStyle::Loose);
+    ICULineBreakerPool::Slot enUSBreaker =
+            pool.acquire(enUS, LineBreakStyle::Loose, LineBreakWordStyle::None);
 
     uint64_t enUSBreakerLocaleId = enUSBreaker.localeId;
     UBreakIterator* enUSBreakerPtr = enUSBreaker.breaker.get();
@@ -624,14 +680,28 @@ TEST(WordBreakerTest, LineBreakerPool_acquire_with_release) {
     EXPECT_EQ(nullptr, enUSBreaker.breaker.get());
 
     // acquire must return a different instance if the locale is different.
-    ICULineBreakerPool::Slot frFRBreaker = pool.acquire(frFR, LineBreakStyle::Loose);
+    ICULineBreakerPool::Slot frFRBreaker =
+            pool.acquire(frFR, LineBreakStyle::Loose, LineBreakWordStyle::None);
     EXPECT_NE(enUSBreakerPtr, frFRBreaker.breaker.get());
     EXPECT_NE(enUSBreakerLocaleId, frFRBreaker.localeId);
 
     // acquire must return the same instance as released before if the locale is the same.
-    ICULineBreakerPool::Slot enUSBreaker2 = pool.acquire(enUS, LineBreakStyle::Loose);
+    ICULineBreakerPool::Slot enUSBreaker2 =
+            pool.acquire(enUS, LineBreakStyle::Loose, LineBreakWordStyle::None);
     EXPECT_EQ(enUSBreakerPtr, enUSBreaker2.breaker.get());
     EXPECT_EQ(enUSBreakerLocaleId, enUSBreaker2.localeId);
+
+    // acquire must return a different instance if the line break is different.
+    ICULineBreakerPool::Slot frFRBreaker2 =
+            pool.acquire(frFR, LineBreakStyle::Normal, LineBreakWordStyle::None);
+    ICULineBreakerPool::Slot frFRBreaker3 =
+            pool.acquire(frFR, LineBreakStyle::Normal, LineBreakWordStyle::Phrase);
+    EXPECT_NE(frFRBreaker.breaker.get(), frFRBreaker2.breaker.get());
+    EXPECT_NE(frFRBreaker.breaker.get(), frFRBreaker3.breaker.get());
+    EXPECT_NE(frFRBreaker2.breaker.get(), frFRBreaker3.breaker.get());
+    EXPECT_EQ(frFRBreaker.localeId, frFRBreaker2.localeId);
+    EXPECT_EQ(frFRBreaker.localeId, frFRBreaker3.localeId);
+    EXPECT_EQ(frFRBreaker2.localeId, frFRBreaker3.localeId);
 }
 
 TEST(WordBreakerTest, LineBreakerPool_exceeds_pool_size) {
@@ -644,7 +714,7 @@ TEST(WordBreakerTest, LineBreakerPool_exceeds_pool_size) {
 
     // Make pool full.
     for (size_t i = 0; i < MAX_POOL_SIZE * 2; i++) {
-        slots[i] = pool.acquire(enUS, LineBreakStyle::None);
+        slots[i] = pool.acquire(enUS, LineBreakStyle::None, LineBreakWordStyle::None);
         EXPECT_EQ(0U, pool.getPoolSize());
     }
 
