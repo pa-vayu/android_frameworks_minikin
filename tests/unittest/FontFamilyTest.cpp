@@ -116,6 +116,11 @@ TEST(LocaleTest, getStringTest) {
     EXPECT_EQ("ja-Jpan-JP", createLocale("ja-JP-u-lb-loose-em-emoji").getString());
     EXPECT_EQ("ja-Jpan-JP", createLocale("ja-JP-u-em-default-lb-strict").getString());
     EXPECT_EQ("ja-Jpan-JP", createLocale("ja-JP-u-lb-bogus").getString());
+    EXPECT_EQ("ja-Jpan-JP", createLocale("ja-JP-u-lw-phrase").getString());
+    EXPECT_EQ("ja-Jpan-JP", createLocale("ja-JP-u-lb-normal-lw-phrase").getString());
+    EXPECT_EQ("ja-Jpan-JP", createLocale("ja-JP-u-lb-strict-lw-phrase").getString());
+    EXPECT_EQ("ja-Jpan-JP", createLocale("ja-JP-u-lb-loose-lw-phrase-em-emoji").getString());
+    EXPECT_EQ("ja-Jpan-JP", createLocale("ja-JP-u-em-default-lb-strict-lw-phrase").getString());
 
     // Emoji subtag is dropped from getString().
     EXPECT_EQ("es-Latn-419", createLocale("es-419-u-em-emoji").getString());
@@ -126,13 +131,26 @@ TEST(LocaleTest, getStringTest) {
 }
 
 TEST(LocaleTest, getStringWithLineBreakOptionTest) {
-    EXPECT_EQ("en-Latn-US", createLocale("en").getStringWithLineBreakOption(LineBreakStyle::None));
-    EXPECT_EQ("en-Latn-US-u-lb-loose",
-              createLocale("en").getStringWithLineBreakOption(LineBreakStyle::Loose));
-    EXPECT_EQ("en-Latn-US-u-lb-normal",
-              createLocale("en").getStringWithLineBreakOption(LineBreakStyle::Normal));
-    EXPECT_EQ("en-Latn-US-u-lb-strict",
-              createLocale("en").getStringWithLineBreakOption(LineBreakStyle::Strict));
+    EXPECT_EQ("en-Latn-US", createLocale("en").getStringWithLineBreakOption(
+                                    LineBreakStyle::None, LineBreakWordStyle::None));
+    EXPECT_EQ("en-Latn-US-u-lb-loose", createLocale("en").getStringWithLineBreakOption(
+                                               LineBreakStyle::Loose, LineBreakWordStyle::None));
+    EXPECT_EQ("en-Latn-US-u-lb-normal", createLocale("en").getStringWithLineBreakOption(
+                                                LineBreakStyle::Normal, LineBreakWordStyle::None));
+    EXPECT_EQ("en-Latn-US-u-lb-strict", createLocale("en").getStringWithLineBreakOption(
+                                                LineBreakStyle::Strict, LineBreakWordStyle::None));
+
+    EXPECT_EQ("en-Latn-US-u-lw-phrase", createLocale("en").getStringWithLineBreakOption(
+                                                LineBreakStyle::None, LineBreakWordStyle::Phrase));
+    EXPECT_EQ("en-Latn-US-u-lb-loose-lw-phrase",
+              createLocale("en").getStringWithLineBreakOption(LineBreakStyle::Loose,
+                                                              LineBreakWordStyle::Phrase));
+    EXPECT_EQ("en-Latn-US-u-lb-normal-lw-phrase",
+              createLocale("en").getStringWithLineBreakOption(LineBreakStyle::Normal,
+                                                              LineBreakWordStyle::Phrase));
+    EXPECT_EQ("en-Latn-US-u-lb-strict-lw-phrase",
+              createLocale("en").getStringWithLineBreakOption(LineBreakStyle::Strict,
+                                                              LineBreakWordStyle::Phrase));
 }
 
 TEST(LocaleTest, invalidLanguageTagTest) {  // just make sure no crash happens

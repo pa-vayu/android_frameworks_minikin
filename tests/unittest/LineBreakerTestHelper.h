@@ -95,6 +95,10 @@ public:
 
     virtual LineBreakStyle lineBreakStyle() const override { return LineBreakStyle::None; }
 
+    virtual LineBreakWordStyle lineBreakWordStyle() const override {
+        return LineBreakWordStyle::None;
+    }
+
 private:
     MinikinPaint mPaint;
     uint32_t mLocaleListId;
