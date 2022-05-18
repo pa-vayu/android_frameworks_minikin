@@ -90,8 +90,6 @@ cc_library {
     ],
     export_header_lib_headers: ["libminikin_headers"],
 
-    clang: true,
-
     target: {
         android: {
             shared_libs: [
